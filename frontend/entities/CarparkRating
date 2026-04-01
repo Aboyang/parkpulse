@@ -1,0 +1,22 @@
+{
+  "name": "CarparkRating",
+  "type": "object",
+  "properties": {
+    "carpark_id": {
+      "type": "string",
+      "description": "ID of the rated carpark"
+    },
+    "rating": {
+      "type": "number",
+      "description": "1-5 star rating"
+    },
+    "comment": {
+      "type": "string",
+      "description": "Optional comment"
+    }
+  },
+  "required": [
+    "carpark_id",
+    "rating"
+  ]
+}

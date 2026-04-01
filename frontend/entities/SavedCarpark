@@ -1,0 +1,23 @@
+{
+  "name": "SavedCarpark",
+  "type": "object",
+  "properties": {
+    "carpark_id": {
+      "type": "string",
+      "description": "ID of the saved carpark"
+    },
+    "carpark_name": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "carpark_id",
+    "carpark_name"
+  ]
+}
