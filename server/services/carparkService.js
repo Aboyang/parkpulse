@@ -35,7 +35,7 @@ class CarparkAvailabilityService {
   }
 
   // Search nearby carparks
-  async searchNearbyCarpark(latitude, longitude, radius) {
+  async searchNearbyCarpark(latitude, longitude, radius, evCharging) {
     // GOOGLE MAP NEARBY API (commented out)
     /*
     const body = {
@@ -122,11 +122,13 @@ class CarparkAvailabilityService {
         free_parking: carpark.free_parking !== "NO",
         free_parking_details: carpark.free_parking,
         payment: carpark.type_of_parking_system,
-        ev_charging: false, // placeholder
-        erp_zone: false, // placeholder
+        ev_charging: carpark.ev_charging === "YES",
         distance: dist, // distance in meters
       };
-    });
+    })
+
+    // Step 4: Filter by EV charging if requested
+    .filter((c) => (evCharging ? c.ev_charging : true));
 
     return enrichedCarparks;
   }
@@ -187,12 +189,12 @@ class CarparkAvailabilityService {
   }
 
   // MAIN FUNCTION: find carparks near an address
-  async findCarparks(address, radius = 500) {
+  async findCarparks(address, radius = 500, evCharging = false) {
     // Step 1: Geocode address → lat/lng
     const geo = await this.getGeocode(address);
 
     // Step 2: Search nearby carparks
-    let carparks = await this.searchNearbyCarpark(geo.latitude, geo.longitude, radius);
+    let carparks = await this.searchNearbyCarpark(geo.latitude, geo.longitude, radius, evCharging);
 
     // Step 3: Sort by availability
     carparks = this.sortByAvailability(carparks);

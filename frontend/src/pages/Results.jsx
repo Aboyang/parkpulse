@@ -78,12 +78,13 @@ export default function Results() {
   }, [timestamp]);
 
   const { data: allCarparks = [], isLoading: loadingCarparks } = useQuery({
-    queryKey: ['local-carparks', query, timestamp, filterRadius],
+    queryKey: ['local-carparks', query, timestamp, filterRadius, evCharge],
     queryFn: async () => {
       try {
         const params = {};
         if (query) params.address = query;
         if (filterRadius) params.radius = filterRadius;
+        if (evCharge) params.ev_charging = true;
 
         const res = await axios.get('http://localhost:3000/api/carparks', { params });
         const carparks = res.data.carparks || [];
@@ -101,7 +102,6 @@ export default function Results() {
           free_parking_details: cp.free_parking_details,
           payment: cp.payment,
           ev_charging: cp.ev_charging,
-          erp_zone: cp.erp_zone,
         }));
       } catch (err) {
         console.error('Error fetching carparks:', err.message);

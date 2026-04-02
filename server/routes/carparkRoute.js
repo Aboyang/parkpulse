@@ -4,10 +4,10 @@ import CarparkAvailabilityService from "../services/carparkService.js";
 const router = express.Router();
 const service = new CarparkAvailabilityService();
 
-// GET /carparks?address=&radius=
+// GET /carparks?address=&radius=&ev_charging=
 router.get("/", async (req, res) => {
   try {
-    const { address, radius } = req.query;
+    const { address, radius, ev_charging } = req.query;
 
     if (!address) {
       return res.status(400).json({ error: "Address is required" });
@@ -15,8 +15,11 @@ router.get("/", async (req, res) => {
 
     const carparks = await service.findCarparks(
       address,
-      radius ? parseInt(radius) : 500
+      radius ? parseInt(radius) : 500,
+      ev_charging
     );
+
+    console.log(carparks.length)
 
     res.json({
       carparks: carparks
