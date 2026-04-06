@@ -157,77 +157,124 @@
 
 
 // Testing load balancing across multiple server instances
-import fetch from "node-fetch";
+// import fetch from "node-fetch";
 
-const locations = [
-  "ALBERT CENTRE MARKET & FOOD CENTRE",
-  "ANG MO KIO 628 MARKET",
-  "BEDOK 85 MARKET & FOOD CENTRE",
-  "CHAI CHEE MARKET",
-  "CHOA CHU KANG MARKET",
-  "CLEMENTI MARKET",
-  "GEYLANG SERAI MARKET",
-  "HOUGANG 308 MARKET",
-  "JURONG WEST 505 MARKET",
-  "KALLANG MARKET"
-];
+// const locations = [
+//   "ALBERT CENTRE MARKET & FOOD CENTRE",
+//   "ANG MO KIO 628 MARKET",
+//   "BEDOK 85 MARKET & FOOD CENTRE",
+//   "CHAI CHEE MARKET",
+//   "CHOA CHU KANG MARKET",
+//   "CLEMENTI MARKET",
+//   "GEYLANG SERAI MARKET",
+//   "HOUGANG 308 MARKET",
+//   "JURONG WEST 505 MARKET",
+//   "KALLANG MARKET"
+// ];
 
-const radius = 500;
-const URL_BASE = `http://localhost:8080/api/carparks`;
+// const radius = 500;
+// const URL_BASE = `http://localhost:8080/api/carparks`;
 
-// Track port distribution
-const portCount = {};
+// // Track port distribution
+// const portCount = {};
 
-async function makeRequest(i, address) {
-  const start = Date.now();
-  try {
-    const res = await fetch(`${URL_BASE}?address=${encodeURIComponent(address)}&radius=${radius}`);
-    const data = await res.json();
-    const end = Date.now();
-    const duration = end - start;
+// async function makeRequest(i, address) {
+//   const start = Date.now();
+//   try {
+//     const res = await fetch(`${URL_BASE}?address=${encodeURIComponent(address)}&radius=${radius}`);
+//     const data = await res.json();
+//     const end = Date.now();
+//     const duration = end - start;
 
-    const carparkCount = Array.isArray(data.carparks) ? data.carparks.length : 0;
-    const port = data.port || "unknown";
+//     const carparkCount = Array.isArray(data.carparks) ? data.carparks.length : 0;
+//     const port = data.port || "unknown";
 
-    // Track how many requests each server handled
-    portCount[port] = (portCount[port] || 0) + 1;
+//     // Track how many requests each server handled
+//     portCount[port] = (portCount[port] || 0) + 1;
 
-    console.log(
-      `Request ${i + 1}`.padEnd(12, " ") +
-      `| ${address.padEnd(40, " ")} | port=${port.padEnd(5, " ")} | carparks=${carparkCount.toString().padEnd(5, " ")} | time=${duration}ms`
-    );
-  } catch (err) {
-    const end = Date.now();
-    console.error(`Request ${i + 1} (${address}) failed after ${end - start}ms:`, err.message);
-  }
-}
+//     console.log(
+//       `Request ${i + 1}`.padEnd(12, " ") +
+//       `| ${address.padEnd(40, " ")} | port=${port.padEnd(5, " ")} | carparks=${carparkCount.toString().padEnd(5, " ")} | time=${duration}ms`
+//     );
+//   } catch (err) {
+//     const end = Date.now();
+//     console.error(`Request ${i + 1} (${address}) failed after ${end - start}ms:`, err.message);
+//   }
+// }
 
-async function runTest() {
-  const totalRequests = 1000;
-  const batchSize = 10; // 10 requests concurrently
-  let requestCounter = 0;
+// async function runTest() {
+//   const totalRequests = 1000;
+//   const batchSize = 10; // 10 requests concurrently
+//   let requestCounter = 0;
 
-  console.log("--- Starting Test ---");
-  const startTime = Date.now();
+//   console.log("--- Starting Test ---");
+//   const startTime = Date.now();
 
-  while (requestCounter < totalRequests) {
-    const batch = [];
-    for (let i = 0; i < batchSize && requestCounter < totalRequests; i++) {
-      const address = locations[requestCounter % locations.length];
-      batch.push(makeRequest(requestCounter, address));
-      requestCounter++;
+//   while (requestCounter < totalRequests) {
+//     const batch = [];
+//     for (let i = 0; i < batchSize && requestCounter < totalRequests; i++) {
+//       const address = locations[requestCounter % locations.length];
+//       batch.push(makeRequest(requestCounter, address));
+//       requestCounter++;
+//     }
+//     await Promise.all(batch);
+//   }
+
+//   const endTime = Date.now();
+//   console.log(`\n--- Test Complete ---`);
+//   console.log(`Total time taken: ${endTime - startTime} ms\n`);
+
+//   console.log("--- Server Distribution ---");
+//   Object.entries(portCount).forEach(([port, count]) => {
+//     console.log(`Port ${port}: ${count} requests`);
+//   });
+// }
+
+// runTest();
+
+
+
+// testing the rateCarpark API
+// testRateCarparkClient.js
+import axios from "axios";
+
+const BASE_URL = "http://localhost:3000/api/carparks";
+
+async function testRateCarpark() {
+  const testCases = [
+    { carparkId: "A76", userId: "user1", rating: 4, comment: "Nice and spacious parking." },
+    { carparkId: "A76", userId: "user2", rating: 5, comment: "Very convenient location." },
+    { carparkId: "JM31", userId: "user3", rating: 3, comment: "Can get crowded in evenings." },
+    { carparkId: "JM31", userId: "user4", rating: 4, comment: "Easy to find a spot in mornings." },
+  ];
+
+  // Rate carparks
+  for (const tc of testCases) {
+    try {
+      const response = await axios.post(`${BASE_URL}/rate`, {
+        carparkId: tc.carparkId,
+        userId: tc.userId,
+        rating: tc.rating,
+        comment: tc.comment,
+      });
+      console.log(`Rated ${tc.carparkId}:`, response.data.data);
+    } catch (err) {
+      console.error(`Error rating ${tc.carparkId}:`, err.response?.data || err.message);
     }
-    await Promise.all(batch);
   }
 
-  const endTime = Date.now();
-  console.log(`\n--- Test Complete ---`);
-  console.log(`Total time taken: ${endTime - startTime} ms\n`);
-
-  console.log("--- Server Distribution ---");
-  Object.entries(portCount).forEach(([port, count]) => {
-    console.log(`Port ${port}: ${count} requests`);
-  });
+  // Fetch current ratings
+  const carparks = ["A76", "JM31"];
+  for (const cp of carparks) {
+    try {
+      const response = await axios.get(`${BASE_URL}/rating/${cp}`);
+      console.log(`\nCurrent rating for ${cp}:`, response.data.data);
+    } catch (err) {
+      console.error(`Error fetching rating for ${cp}:`, err.response?.data || err.message);
+    }
+  }
 }
 
-runTest();
+testRateCarpark()
+  .then(() => console.log("\nTest completed"))
+  .catch(err => console.error("Test failed:", err));

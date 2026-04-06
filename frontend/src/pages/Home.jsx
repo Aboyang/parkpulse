@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Navigation, Zap, ShieldOff, LogOut, MapPin, Sun, Moon } from 'lucide-react';
+import { Navigation, Zap, LogOut, MapPin, Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SearchBar from '../components/carpark/SearchBar';
 import PreferenceToggle from '../components/carpark/PreferenceToggle';
@@ -15,7 +15,6 @@ export default function Home() {
   const { theme, setTheme } = useTheme();
   const [destination, setDestination] = useState('');
   const [selectedCoords, setSelectedCoords] = useState(null);
-  const [erpFree, setErpFree] = useState(false);
   const [evCharging, setEvCharging] = useState(false);
   const [radius, setRadius] = useState(DEFAULT_SEARCH_RADIUS_M);
   const [gpsLoading, setGpsLoading] = useState(true);
@@ -23,6 +22,13 @@ export default function Home() {
 
   // Get GPS on mount, reverse geocode to fill the search bar
   useEffect(() => {
+    // Redirect to /Auth if userId is not in localStorage
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      navigate('/Auth');
+      return;
+    }
+
     getCurrentPosition().then(async (pos) => {
       if (pos) {
         const label = await reverseGeocode(pos.lat, pos.lng);
@@ -31,7 +37,7 @@ export default function Home() {
       }
       setGpsLoading(false);
     });
-  }, []);
+  }, [navigate]);
 
   const handleSearch = async () => {
     setSearching(true);
@@ -45,7 +51,6 @@ export default function Home() {
     const coords = selectedCoords ?? freshPos;
     const params = new URLSearchParams({
       q: searchDest.trim(),
-      erp: erpFree,
       ev: evCharging,
       radius,
       t: Date.now(),
@@ -155,7 +160,6 @@ export default function Home() {
           </div>
 
           <div className="space-y-2">
-            <PreferenceToggle label="ERP-Free Route" icon={ShieldOff} checked={erpFree} onCheckedChange={setErpFree} />
             <PreferenceToggle label="EV Charging Ports" icon={Zap} checked={evCharging} onCheckedChange={setEvCharging} />
           </div>
 

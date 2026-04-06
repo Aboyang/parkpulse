@@ -1,54 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from 'next-themes';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Star, Car, Clock, DollarSign, Zap, Shield, Smartphone, Navigation } from 'lucide-react';
+import { ArrowLeft, Star, Car, Clock, DollarSign, Zap, Shield, Smartphone, Navigation, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { db } from '@/api/client';
 
 export default function Detail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme } = useTheme();
-  const params = new URLSearchParams(window.location.search);
-  const id = decodeURIComponent(params.get('id') || '');
-  
-  const tileUrl = theme === 'dark' 
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
-  // Carpark passed via navigation state (from Results page)
-  const stateCarpark = location.state?.carpark;
+  // Carpark passed via navigation state
+  const carpark = location.state?.carpark;
 
-  // Also get saved ratings from our DB
-  const { data: dbCarparks = [], isLoading: loadingDb } = useQuery({
-    queryKey: ['carpark-db', id],
-    queryFn: () => db.entities.Carpark.filter({ id }),
-    enabled: !!id,
-  });
-
-  const dbCarpark = dbCarparks[0];
-
-  // Merge state carpark with any stored ratings
-  const carpark = stateCarpark
-    ? {
-        ...stateCarpark,
-        average_rating: dbCarpark?.average_rating ?? null,
-        total_ratings: dbCarpark?.total_ratings ?? 0,
-      }
-    : dbCarpark;
-
-  if (loadingDb && !carpark) {
-    return (
-      <div className="min-h-screen bg-slate-900 dark:bg-blue-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-700 dark:border-slate-200 border-t-teal-400 rounded-full animate-spin" />
-      </div>
-    );
-  }
+  console.log('Detail page received carpark:', carpark);
 
   if (!carpark) {
     return (
@@ -58,11 +28,16 @@ export default function Detail() {
     );
   }
 
+  const tileUrl = theme === 'dark'
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
   const availPct = carpark.total_capacity > 0
     ? (carpark.available_lots / carpark.total_capacity) * 100
     : null;
-  const availColor = availPct === null ? 'text-slate-400' : availPct > 50 ? 'text-emerald-400' : availPct > 20 ? 'text-amber-400' : 'text-red-400';
-
+  const availColor = availPct === null
+    ? 'text-slate-400'
+    : availPct > 50 ? 'text-emerald-400' : availPct > 20 ? 'text-amber-400' : 'text-red-400';
   const lotsLabel = carpark.total_capacity > 0
     ? `${carpark.available_lots} / ${carpark.total_capacity}`
     : `${carpark.available_lots} available`;
@@ -73,6 +48,34 @@ export default function Detail() {
     { label: 'Mobile Payment', enabled: carpark.mobile_payment, icon: Smartphone, color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
     { label: 'Free Parking', enabled: carpark.free_parking, icon: DollarSign, color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
   ];
+
+  const handleSaveCarpark = async () => {
+    const userId = localStorage.getItem('userId');
+    if (isSaved) return;
+
+    if (!userId) {
+      navigate('/Auth');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const response = await fetch('http://localhost:3000/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, carparkId: carpark.id }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save favorite');
+
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (err) {
+      console.error('Failed to save carpark:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 dark:from-blue-50 dark:to-slate-50 text-white dark:text-slate-800">
@@ -101,7 +104,7 @@ export default function Detail() {
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="px-5 relative z-10 pb-8 max-w-lg mx-auto mt-20"
+        className="px-5 mt-20 relative z-10 pb-8 max-w-lg mx-auto"
       >
         <div className="bg-slate-800/80 dark:bg-white/90 backdrop-blur-xl border border-slate-700/50 dark:border-slate-200/50 rounded-2xl p-5 space-y-5">
           {/* Title & Rating */}
@@ -113,7 +116,7 @@ export default function Detail() {
             {carpark.average_rating != null ? (
               <div className="flex items-center gap-1 bg-amber-500/20 px-2.5 py-1 rounded-lg shrink-0">
                 <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                <span className="text-amber-300 font-semibold text-sm">{carpark.average_rating?.toFixed(1)}</span>
+                <span className="text-amber-300 font-semibold text-sm">{carpark.average_rating.toFixed(1)}</span>
                 <span className="text-slate-400 text-xs">({carpark.total_ratings})</span>
               </div>
             ) : (
@@ -155,13 +158,27 @@ export default function Detail() {
             </div>
           )}
 
-          <Button
-            onClick={() => navigate(`/Navigate?id=${encodeURIComponent(carpark.id)}`, { state: { carpark, userGps: location.state?.userGps } })}
-            className="w-full h-14 bg-teal-500 hover:bg-teal-600 text-white font-semibold text-base rounded-xl shadow-lg shadow-teal-500/25"
-          >
-            <Navigation className="w-5 h-5 mr-2" />
-            Confirm Selection
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={() => navigate(`/Navigate?id=${encodeURIComponent(carpark.id)}`, { state: { carpark, userGps: location.state?.userGps } })}
+              className="w-full h-14 bg-teal-500 hover:bg-teal-600 text-white font-semibold text-base rounded-xl shadow-lg shadow-teal-500/25"
+            >
+              <Navigation className="w-5 h-5 mr-2" />
+              Confirm Selection
+            </Button>
+            <Button
+              onClick={handleSaveCarpark}
+              disabled={isSaving}
+              className={`w-full h-14 font-semibold text-base rounded-xl transition-all ${
+                isSaved
+                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                  : 'bg-slate-700/50 hover:bg-slate-700 dark:bg-slate-300/50 dark:hover:bg-slate-300 text-white dark:text-slate-900'
+              }`}
+            >
+              <Heart className={`w-5 h-5 mr-2 ${isSaved ? 'fill-current' : ''}`} />
+              {isSaved ? 'Saved!' : 'Save Carpark'}
+            </Button>
+          </div>
         </div>
       </motion.div>
     </div>

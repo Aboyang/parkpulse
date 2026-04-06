@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bookmark, Trash2, Navigation } from 'lucide-react';
@@ -42,6 +42,32 @@ export default function Saved() {
     },
     enabled: saved.length > 0,
   });
+
+  // Batch rating
+  const { data: ratings = {}, isLoading: loadingRatings } = useQuery({
+    queryKey: ['carpark-ratings', saved.map(c => c.carparkId).join(',')],
+    queryFn: async () => {
+      const results = await Promise.all(
+        saved.map(async (item) => {
+          try {
+            const res = await fetch(`http://localhost:3000/api/rating/${item.carparkId}`);
+            if (!res.ok) throw new Error('Failed to fetch rating');
+            const json = await res.json();
+            // Return only the `data` field
+            return [item.carparkId, json.data ?? { message: 'No data' }];
+          } catch {
+            return [item.carparkId, { message: 'No data' }];
+          }
+        })
+      );
+      return Object.fromEntries(results);
+    },
+    enabled: saved.length > 0,
+  });
+
+  useEffect(() => {
+    console.log("ratings:", ratings);
+  }, [ratings]);
 
   // Delete saved carpark
   const deleteMutation = useMutation({
@@ -118,6 +144,8 @@ export default function Saved() {
                               longitude: item.longitude,
                               operating_hours: item.operating_hours,
                               available_lots: availabilities[item.carparkId] ?? 'No data',
+                              average_rating: ratings[item.carparkId]?.averageRating,
+                              total_ratings: ratings[item.carparkId]?.totalRatings,
                             },
                           },
                         })

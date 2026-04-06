@@ -102,6 +102,8 @@ export default function Results() {
           free_parking_details: cp.free_parking_details,
           payment: cp.payment,
           ev_charging: cp.ev_charging,
+          average_rating: cp.average_rating,
+          total_ratings: cp.total_ratings,
         }));
       } catch (err) {
         console.error('Error fetching carparks:', err.message);

@@ -18,7 +18,7 @@ export default function CarparkCard({ carpark, distance, onClick }) {
         </div>
         <div className="flex items-center gap-1 ml-2">
           <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-          <span className="text-white dark:text-slate-900 text-sm font-medium">{carpark.average_rating?.toFixed(1) || 'N/A'}</span>
+          <span className="text-white dark:text-slate-900 text-sm font-medium">{carpark.average_rating === 0 ? 'N/A' : carpark.average_rating?.toFixed(1) || 'N/A'}</span>
         </div>
       </div>
 

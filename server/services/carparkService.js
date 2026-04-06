@@ -4,6 +4,8 @@
 import axios from "axios";
 import { svy21ToLatLon } from "../utils/coordConverter.js";
 import { carparkDB } from "../utils/carparkDB.js";
+import RateCarparkService from "./rateCarparkService.js";
+const rateService = new RateCarparkService();
 
 import path from "path";
 import dotenv from "dotenv";
@@ -44,71 +46,70 @@ class CarparkAvailabilityService {
 
   // Search nearby carparks
   async searchNearbyCarpark(latitude, longitude, radius, evCharging) {
-
-    // Step 1: Filter all carparks within radius using squared distance (faster)
+    // Step 1: Filter nearby carparks
     const nearbyCarparksRaw = carparkDB
       .map((carpark) => {
         const cx = parseFloat(carpark.x_coord);
         const cy = parseFloat(carpark.y_coord);
-
         const dist2 = (cx - latitude) ** 2 + (cy - longitude) ** 2;
-
         return { carpark, dist2 };
       })
-      .filter((c) => c.dist2 <= radius ** 2) // compare squared distances
-      .map((c) => ({ ...c, dist: Math.sqrt(c.dist2) })) // compute actual distance for output
-      .sort((a, b) => a.dist - b.dist); // closest first
+      .filter((c) => c.dist2 <= radius ** 2)
+      .map((c) => ({ ...c, dist: Math.sqrt(c.dist2) }))
+      .sort((a, b) => a.dist - b.dist);
 
     console.log(`>>> Found ${nearbyCarparksRaw.length} carparks within ${radius}m`);
 
-    // Step 2: Fetch availability data
+    // Step 2: Fetch availability
     const availabilityData = await this.fetchCarparkAvailability();
 
-    // Step 3: Enrich each nearby carpark
-    const enrichedCarparks = nearbyCarparksRaw.map(({ carpark, dist }) => {
-      const availability = availabilityData.find(
-        (a) => a.carpark_number === carpark.car_park_no
-      );
+    // Step 3: Enrich carparks (here’s the correct place for await)
+    const enrichedCarparks = await Promise.all(
+      nearbyCarparksRaw.map(async ({ carpark, dist }) => {
+        const availability = availabilityData.find(
+          (a) => a.carpark_number === carpark.car_park_no
+        );
+        const info = availability?.carpark_info?.[0];
 
-      const info = availability?.carpark_info?.[0];
+        let operating_hours = "Unknown";
+        if (carpark.short_term_parking === "NO") {
+          operating_hours = "Season parking only";
+        } else if (
+          carpark.short_term_parking === "WHOLE DAY" &&
+          carpark.night_parking === "YES"
+        ) {
+          operating_hours = "24 hrs";
+        } else {
+          operating_hours = carpark.short_term_parking;
+        }
 
-      // Determine operating hours
-      let operating_hours = "Unknown";
-      if (carpark.short_term_parking === "NO") {
-        operating_hours = "Season parking only";
-      } else if (
-        carpark.short_term_parking === "WHOLE DAY" &&
-        carpark.night_parking === "YES"
-      ) {
-        operating_hours = "24 hrs";
-      } else {
-        operating_hours = carpark.short_term_parking;
-      }
+        const { latitude: lat, longitude: lon } = svy21ToLatLon(
+          parseFloat(carpark.x_coord),
+          parseFloat(carpark.y_coord)
+        );
 
-      const { latitude: lat, longitude: lon } = svy21ToLatLon(
-        parseFloat(carpark.x_coord),
-        parseFloat(carpark.y_coord)
-      );
+        const rating = await rateService.getCarparkRating(carpark.car_park_no);
 
-      return {
-        carpark_no: carpark.car_park_no,
-        name: carpark.address,
-        location: { latitude: lat, longitude: lon },
-        available_lots: info ? parseInt(info.lots_available) : null,
-        total_capacity: info ? parseInt(info.total_lots) : null,
-        operating_hours,
-        free_parking: carpark.free_parking !== "NO",
-        free_parking_details: carpark.free_parking,
-        payment: carpark.type_of_parking_system,
-        ev_charging: carpark.ev_charging === "YES",
-        distance: dist, // distance in meters
-      };
-    })
+        return {
+          carpark_no: carpark.car_park_no,
+          name: carpark.address,
+          location: { latitude: lat, longitude: lon },
+          available_lots: info ? parseInt(info.lots_available) : null,
+          total_capacity: info ? parseInt(info.total_lots) : null,
+          operating_hours,
+          free_parking: carpark.free_parking !== "NO",
+          free_parking_details: carpark.free_parking,
+          payment: carpark.type_of_parking_system,
+          ev_charging: carpark.ev_charging === "YES",
+          distance: dist,
+          average_rating: rating?.averageRating ?? null,
+          total_ratings: rating?.totalRatings ?? null
+        };
+      })
+    );
 
-    // Step 4: Filter by EV charging if requested
-    .filter((c) => (evCharging ? c.ev_charging : true));
-
-    return enrichedCarparks;
+    // Step 4: EV filter
+    return enrichedCarparks.filter((c) => (evCharging ? c.ev_charging : true));
   }
 
   // Fetch real-time availability for all carparks

@@ -5,6 +5,7 @@ import cors from "cors";
 import carparkRouter from "./routes/carparkRoute.js";
 import favoriteRouter from "./routes/favoriteCarparkRoute.js";
 import authRouter from "./routes/authRoute.js";
+import rateCarparkRouter from "./routes/rateCarparkRoute.js";
 import { portLogger } from "./middlewares/portMiddleware.js";
 
 const app = express();
@@ -25,6 +26,7 @@ app.use(cors({
 app.use("/api/carparks", carparkRouter);
 app.use("/api/favorites", favoriteRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/rating", rateCarparkRouter);
 
 // Root endpoint
 app.get("/", (req, res) => {
