@@ -1,5 +1,6 @@
 ## ParkPulse Frontend
 
+```plaintext
 frontend/
 ├── components.json
 ├── eslint.config.js
