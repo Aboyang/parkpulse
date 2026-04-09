@@ -1,6 +1,14 @@
 # ParkPulse
 
-<img width="422" height="813" alt="Screenshot 2026-04-09 at 1 28 43 PM" src="https://github.com/user-attachments/assets/268f30f3-32e1-45da-a485-7aedced758cc" />
+<img width="140" height="272" alt="Screenshot 2026-04-09 at 1 28 43 PM" src="https://github.com/user-attachments/assets/268f30f3-32e1-45da-a485-7aedced758cc" />
+
+<img width="140" height="272" alt="Screenshot 2026-04-09 at 1 44 42 PM" src="https://github.com/user-attachments/assets/afb99759-207e-421d-8077-19d5fd68b113" />
+
+<img width="140" height="272" alt="Screenshot 2026-04-09 at 1 44 56 PM" src="https://github.com/user-attachments/assets/8e335403-562b-455b-a79d-2bfecdb8b9ec" />
+
+<img width="140" height="272" alt="Screenshot 2026-04-09 at 1 45 10 PM" src="https://github.com/user-attachments/assets/e67dc71f-339f-471e-bdff-c2ad4a538ff3" />
+
+<img width="140" height="272" alt="Screenshot 2026-04-09 at 1 45 48 PM" src="https://github.com/user-attachments/assets/7c286399-d11f-406f-888a-6db9e8f69153" />
 
 ## Project Setup
 
