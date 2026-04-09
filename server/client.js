@@ -236,45 +236,65 @@
 
 // testing the rateCarpark API
 // testRateCarparkClient.js
-import axios from "axios";
+// import axios from "axios";
 
-const BASE_URL = "http://localhost:3000/api/carparks";
+// const BASE_URL = "http://localhost:3000/api/carparks";
 
-async function testRateCarpark() {
-  const testCases = [
-    { carparkId: "A76", userId: "user1", rating: 4, comment: "Nice and spacious parking." },
-    { carparkId: "A76", userId: "user2", rating: 5, comment: "Very convenient location." },
-    { carparkId: "JM31", userId: "user3", rating: 3, comment: "Can get crowded in evenings." },
-    { carparkId: "JM31", userId: "user4", rating: 4, comment: "Easy to find a spot in mornings." },
-  ];
+// async function testRateCarpark() {
+//   const testCases = [
+//     { carparkId: "A76", userId: "user1", rating: 4, comment: "Nice and spacious parking." },
+//     { carparkId: "A76", userId: "user2", rating: 5, comment: "Very convenient location." },
+//     { carparkId: "JM31", userId: "user3", rating: 3, comment: "Can get crowded in evenings." },
+//     { carparkId: "JM31", userId: "user4", rating: 4, comment: "Easy to find a spot in mornings." },
+//   ];
 
-  // Rate carparks
-  for (const tc of testCases) {
-    try {
-      const response = await axios.post(`${BASE_URL}/rate`, {
-        carparkId: tc.carparkId,
-        userId: tc.userId,
-        rating: tc.rating,
-        comment: tc.comment,
-      });
-      console.log(`Rated ${tc.carparkId}:`, response.data.data);
-    } catch (err) {
-      console.error(`Error rating ${tc.carparkId}:`, err.response?.data || err.message);
-    }
-  }
+//   // Rate carparks
+//   for (const tc of testCases) {
+//     try {
+//       const response = await axios.post(`${BASE_URL}/rate`, {
+//         carparkId: tc.carparkId,
+//         userId: tc.userId,
+//         rating: tc.rating,
+//         comment: tc.comment,
+//       });
+//       console.log(`Rated ${tc.carparkId}:`, response.data.data);
+//     } catch (err) {
+//       console.error(`Error rating ${tc.carparkId}:`, err.response?.data || err.message);
+//     }
+//   }
 
-  // Fetch current ratings
-  const carparks = ["A76", "JM31"];
-  for (const cp of carparks) {
-    try {
-      const response = await axios.get(`${BASE_URL}/rating/${cp}`);
-      console.log(`\nCurrent rating for ${cp}:`, response.data.data);
-    } catch (err) {
-      console.error(`Error fetching rating for ${cp}:`, err.response?.data || err.message);
-    }
-  }
-}
+//   // Fetch current ratings
+//   const carparks = ["A76", "JM31"];
+//   for (const cp of carparks) {
+//     try {
+//       const response = await axios.get(`${BASE_URL}/rating/${cp}`);
+//       console.log(`\nCurrent rating for ${cp}:`, response.data.data);
+//     } catch (err) {
+//       console.error(`Error fetching rating for ${cp}:`, err.response?.data || err.message);
+//     }
+//   }
+// }
 
-testRateCarpark()
-  .then(() => console.log("\nTest completed"))
-  .catch(err => console.error("Test failed:", err));
+// testRateCarpark()
+//   .then(() => console.log("\nTest completed"))
+//   .catch(err => console.error("Test failed:", err));
+
+
+// testing fetchig current user location
+// import fetch from "node-fetch"; // if Node < 18, otherwise you can use global fetch
+
+// async function fetchLocation() {
+//   try {
+//     const res = await fetch("http://localhost:3000/api/location");
+//     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+//     const data = await res.json();
+//     console.log("Current SVY21 Coordinates:", data);
+//     return data;
+//   } catch (err) {
+//     console.error("Error fetching location:", err);
+//   }
+// }
+
+// // Run the function
+// fetchLocation();

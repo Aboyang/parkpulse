@@ -7,68 +7,56 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CarparkCard from '../components/carpark/CarparkCard';
 import MiniMap from '../components/carpark/MiniMap';
 import FilterPanel from '../components/carpark/FilterPanel';
-import { geocode, getCurrentPosition } from '@/lib/geocode';
 import { DEFAULT_CENTER } from '@/lib/config';
 
-function dist(lat1, lon1, lat2, lon2) {
-  const R = 6371e3;
-  const p1 = (lat1 * Math.PI) / 180;
-  const p2 = (lat2 * Math.PI) / 180;
-  const dp = ((lat2 - lat1) * Math.PI) / 180;
-  const dl = ((lon2 - lon1) * Math.PI) / 180;
-  const a = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+// ─── helpers ────────────────────────────────────────────────────────────────
 
 function formatDistance(meters) {
-  return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${Math.round(meters)} m`;
+  return meters >= 1000
+    ? `${(meters / 1000).toFixed(1)} km`
+    : `${Math.round(meters)} m`;
 }
 
 const SORT_OPTIONS = [
-  { key: 'distance', label: 'Distance' },
+  { key: 'distance',     label: 'Distance'    },
   { key: 'availability', label: 'Availability' },
 ];
 
+// ─── component ──────────────────────────────────────────────────────────────
+
 export default function Results() {
-  const navigate = useNavigate();
+  const navigate       = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const query     = searchParams.get('q') || '';
-  const timestamp = searchParams.get('t') || '';
+  // ── Parse URL params ───────────────────────────────────────────────────────
+  const query     = searchParams.get('q')  || '';
+  const timestamp = searchParams.get('t')  || '';
   const paramLat  = parseFloat(searchParams.get('lat'));
   const paramLng  = parseFloat(searchParams.get('lng'));
   const hasParamCoords = !isNaN(paramLat) && !isNaN(paramLng);
 
-  const userGpsLat = parseFloat(searchParams.get('userlat'));
-  const userGpsLng = parseFloat(searchParams.get('userlng'));
-  const hasUserGps = !isNaN(userGpsLat) && !isNaN(userGpsLng);
-
-  const [center, setCenter] = useState(null);
-  const [geocoding, setGeocoding] = useState(true);
-  const [userGps, setUserGps] = useState(hasUserGps ? [userGpsLat, userGpsLng] : null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [erpFree, setErpFree] = useState(searchParams.get('erp') === 'true');
-  const [evCharge, setEvCharge] = useState(searchParams.get('ev') === 'true');
+  // ── Local state ───────────────────────────────────────────────────────────
+  const [center,       setCenter]       = useState(null);
+  const [geocoding,    setGeocoding]    = useState(true);
+  const [showFilters,  setShowFilters]  = useState(false);
+  const [erpFree,      setErpFree]      = useState(searchParams.get('erp') === 'true');
+  const [evCharge,     setEvCharge]     = useState(searchParams.get('ev')  === 'true');
   const [filterRadius, setFilterRadius] = useState(parseInt(searchParams.get('radius')) || 3000);
-  const [sortBy, setSortBy] = useState('distance');
+  const [sortBy,       setSortBy]       = useState('distance');
 
+  // ── Resolve map center ────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     setCenter(null);
     setGeocoding(true);
 
-    const resolve = async () => {
-      let coords = null;
-      if (hasParamCoords) {
-        coords = { lat: paramLat, lng: paramLng };
-      } else if (query) {
-        coords = await geocode(query);
-      } else {
-        const pos = await getCurrentPosition();
-        coords = pos || { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] };
-      }
+    const resolve = () => {
+      const coords = hasParamCoords
+        ? { lat: paramLat, lng: paramLng }
+        : { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] };
+
       if (!cancelled) {
-        if (coords) setCenter([coords.lat, coords.lng]);
+        setCenter([coords.lat, coords.lng]);
         setGeocoding(false);
       }
     };
@@ -77,49 +65,52 @@ export default function Results() {
     return () => { cancelled = true; };
   }, [timestamp]);
 
+  // ── Fetch carparks ────────────────────────────────────────────────────────
   const { data: allCarparks = [], isLoading: loadingCarparks } = useQuery({
     queryKey: ['local-carparks', query, timestamp, filterRadius, evCharge],
-    queryFn: async () => {
+    queryFn:  async () => {
       try {
         const params = {};
-        if (query) params.address = query;
-        if (filterRadius) params.radius = filterRadius;
-        if (evCharge) params.ev_charging = true;
+        if (query)        params.address     = query;
+        if (filterRadius) params.radius      = filterRadius;
+        if (evCharge)     params.ev_charging = true;
 
-        const res = await axios.get('http://localhost:3000/api/carparks', { params });
+        const res      = await axios.get('http://localhost:3000/api/carparks', { params });
         const carparks = res.data.carparks || [];
 
-        return carparks.map((cp, index) => ({
-          id: cp.carpark_no,
-          name: cp.name,
-          distance: cp.distance,
-          latitude: cp.location?.latitude ?? 0,
-          longitude: cp.location?.longitude ?? 0,
-          available_lots: cp.available_lots,
-          total_capacity: cp.total_capacity,
-          operating_hours: cp.operating_hours,
-          free_parking: cp.free_parking,
+        return carparks.map((cp) => ({
+          id:                   cp.carpark_no,
+          name:                 cp.name,
+          distance:             cp.distance,
+          latitude:             cp.location?.latitude  ?? 0,
+          longitude:            cp.location?.longitude ?? 0,
+          available_lots:       cp.available_lots,
+          total_capacity:       cp.total_capacity,
+          operating_hours:      cp.operating_hours,
+          free_parking:         cp.free_parking,
           free_parking_details: cp.free_parking_details,
-          payment: cp.payment,
-          ev_charging: cp.ev_charging,
-          average_rating: cp.average_rating,
-          total_ratings: cp.total_ratings,
+          payment:              cp.payment,
+          ev_charging:          cp.ev_charging,
+          average_rating:       cp.average_rating,
+          total_ratings:        cp.total_ratings,
         }));
       } catch (err) {
         console.error('Error fetching carparks:', err.message);
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 5  * 60 * 1000,
+    gcTime:    10 * 60 * 1000,
   });
 
+  // ── Filter + sort ─────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     if (!center || !allCarparks.length) return [];
+
     return allCarparks
       .filter((cp) => {
         if (cp.distanceFromCenter > filterRadius) return false;
-        if (erpFree && cp.erp_zone) return false;
+        if (erpFree  && cp.erp_zone)    return false;
         if (evCharge && !cp.ev_charging) return false;
         return true;
       })
@@ -132,19 +123,25 @@ export default function Results() {
         return a.distance - b.distance;
       })
       .slice(0, 50);
-  }, [allCarparks, center, userGps, filterRadius, erpFree, evCharge, sortBy]);
+  }, [allCarparks, center, filterRadius, erpFree, evCharge, sortBy]);
 
   const loading = geocoding || loadingCarparks;
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 dark:from-blue-50 dark:via-slate-50 dark:to-blue-50 text-white dark:text-slate-800">
       <div className="px-5 pt-12 pb-6 max-w-lg mx-auto">
 
-        {/* Header */}
+        {/* ── Header ── */}
         <div className="flex items-center justify-between mb-4">
-          <button onClick={() => navigate('/Home')} className="p-2 -ml-2 rounded-xl hover:bg-slate-800">
+          <button
+            onClick={() => navigate('/Home')}
+            className="p-2 -ml-2 rounded-xl hover:bg-slate-800"
+          >
             <ArrowLeft className="w-5 h-5 text-slate-300" />
           </button>
+
           <div className="text-center">
             <h2 className="text-lg font-semibold">Nearby Carparks</h2>
             {query && (
@@ -153,21 +150,29 @@ export default function Results() {
               </p>
             )}
           </div>
-          <button onClick={() => setShowFilters(true)} className="p-2 rounded-xl bg-slate-800/50 hover:bg-slate-700/50">
+
+          <button
+            onClick={() => setShowFilters(true)}
+            className="p-2 rounded-xl bg-slate-800/50 hover:bg-slate-700/50"
+          >
             <SlidersHorizontal className="w-4 h-4 text-slate-400" />
           </button>
         </div>
 
-        {/* Mini Map */}
+        {/* ── Mini map ── */}
         {center && (
           <MiniMap
             carparks={filtered}
             center={center}
-            onMarkerClick={(cp) => navigate(`/Detail?id=${encodeURIComponent(cp.carpark_no)}`, { state: { carpark: cp, userGps } })}
+            onMarkerClick={(cp) =>
+              navigate(`/Detail?id=${encodeURIComponent(cp.id)}`, {
+                state: { carpark: cp },
+              })
+            }
           />
         )}
 
-        {/* Count + Sort Row */}
+        {/* ── Count + sort row ── */}
         <div className="flex items-center justify-between mt-4 mb-3">
           <p className="text-xs text-slate-400">
             {loading
@@ -175,7 +180,6 @@ export default function Results() {
               : `${filtered.length} carpark${filtered.length !== 1 ? 's' : ''} within ${formatDistance(filterRadius)}`}
           </p>
 
-          {/* Sort Toggle */}
           {!loading && (
             <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-0.5">
               {SORT_OPTIONS.map((opt) => (
@@ -196,13 +200,7 @@ export default function Results() {
           )}
         </div>
 
-        {!loading && userGps && (
-          <p className="text-xs text-teal-500 flex items-center gap-1 -mt-1 mb-3">
-            <MapPin className="w-3 h-3" /> Distances from your location
-          </p>
-        )}
-
-        {/* List */}
+        {/* ── Carpark list ── */}
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="w-8 h-8 border-4 border-slate-700 border-t-teal-400 rounded-full animate-spin" />
@@ -220,7 +218,11 @@ export default function Results() {
                   <CarparkCard
                     carpark={cp}
                     distance={formatDistance(cp.distance)}
-                    onClick={() => navigate(`/Detail?id=${encodeURIComponent(cp.id)}`, { state: { carpark: cp, userGps } })}
+                    onClick={() =>
+                      navigate(`/Detail?id=${encodeURIComponent(cp.id)}`, {
+                        state: { carpark: cp },
+                      })
+                    }
                   />
                 </motion.div>
               ))}
@@ -237,7 +239,7 @@ export default function Results() {
 
       </div>
 
-      {/* Filter Panel */}
+      {/* ── Filter panel ── */}
       <AnimatePresence>
         {showFilters && (
           <FilterPanel

@@ -1,6 +1,6 @@
 // favoriteCarparkRoute.js
 import express from 'express';
-import FavoriteCarparkService from '../services/FavoriteCarparkService.js';
+import FavoriteCarparkService from '../services/favoriteCarparkService.js';
 
 const router = express.Router();
 const favoriteCarparkService = new FavoriteCarparkService();

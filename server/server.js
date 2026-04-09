@@ -6,6 +6,7 @@ import carparkRouter from "./routes/carparkRoute.js";
 import favoriteRouter from "./routes/favoriteCarparkRoute.js";
 import authRouter from "./routes/authRoute.js";
 import rateCarparkRouter from "./routes/rateCarparkRoute.js";
+import locationRouter from "./routes/locationRoute.js";
 import { portLogger } from "./middlewares/portMiddleware.js";
 
 const app = express();
@@ -27,6 +28,7 @@ app.use("/api/carparks", carparkRouter);
 app.use("/api/favorites", favoriteRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/rating", rateCarparkRouter);
+app.use("/api/location", locationRouter);
 
 // Root endpoint
 app.get("/", (req, res) => {

@@ -2,6 +2,7 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, QueryCommand, DeleteCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { carparkDB } from "../utils/carparkDB.js";
+import { svy21ToLatLon } from "../utils/coordConverter.js";
 
 class FavoriteCarparkService {
   constructor() {
@@ -40,6 +41,7 @@ class FavoriteCarparkService {
     // Append full carpark info from carparkDB
     const favoritesWithInfo = favorites.map(fav => {
       const carpark = carparkDB.find(c => c.car_park_no === fav.carparkId);
+
       // Determine operating hours
       let operating_hours = "Unknown";
       if (carpark.short_term_parking === "NO") {
@@ -52,11 +54,17 @@ class FavoriteCarparkService {
       } else {
         operating_hours = carpark.short_term_parking;
       }
+
+      const { latitude: lat, longitude: lon } = svy21ToLatLon(
+        parseFloat(carpark.x_coord),
+        parseFloat(carpark.y_coord)
+      );
+
       return {
         ...fav,
         carparkName: carpark?.address || "Unknown",
-        latitude: carpark?.x_coord,
-        longitude: carpark?.y_coord,
+        latitude: lat,
+        longitude: lon,
         operating_hours
       };
     });

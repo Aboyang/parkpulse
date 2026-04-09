@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
 
 export default function Detail() {
   const navigate = useNavigate();
@@ -18,7 +17,7 @@ export default function Detail() {
   // Carpark passed via navigation state
   const carpark = location.state?.carpark;
 
-  console.log('Detail page received carpark:', carpark);
+  console.log(carpark)
 
   if (!carpark) {
     return (
@@ -44,7 +43,6 @@ export default function Detail() {
 
   const features = [
     { label: 'EV Charging', enabled: carpark.ev_charging, icon: Zap, color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
-    { label: '24/7 Surveillance', enabled: carpark.surveillance_24_7, icon: Shield, color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
     { label: 'Mobile Payment', enabled: carpark.mobile_payment, icon: Smartphone, color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
     { label: 'Free Parking', enabled: carpark.free_parking, icon: DollarSign, color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
   ];
@@ -160,7 +158,7 @@ export default function Detail() {
 
           <div className="space-y-3">
             <Button
-              onClick={() => navigate(`/Navigate?id=${encodeURIComponent(carpark.id)}`, { state: { carpark, userGps: location.state?.userGps } })}
+              onClick={() => navigate(`/Navigate?id=${encodeURIComponent(carpark.id)}`, { state: { carpark } })}
               className="w-full h-14 bg-teal-500 hover:bg-teal-600 text-white font-semibold text-base rounded-xl shadow-lg shadow-teal-500/25"
             >
               <Navigation className="w-5 h-5 mr-2" />

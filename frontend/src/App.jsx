@@ -4,7 +4,6 @@ import { queryClientInstance } from "@/lib/query-cilent";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 
-import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import PageNotFound from "./lib/PageNotFound";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 
@@ -65,28 +64,27 @@ const AuthenticatedApp = () => {
 // ---------------------
 // Main App
 // ---------------------
-function App() {
+export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <AuthProvider>
-        <QueryClientProvider client={queryClientInstance}>
-          <Router>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/auth" element={<Auth />} />
-
-              {/* Protected routes */}
-              <Route path="/*" element={<AuthenticatedApp />} />
-
-              {/* Catch-all → redirect first-time visitors to /auth */}
-              <Route path="*" element={<Navigate to="/auth" replace />} />
-            </Routes>
-          </Router>
-          <Toaster />
-        </QueryClientProvider>
-      </AuthProvider>
+      <QueryClientProvider client={queryClientInstance}>
+        <Router>
+          <Routes>
+            <Route path="/Auth" element={<Auth />} />
+            <Route path="/Home" element={<Home />} />
+            <Route path="/Results" element={<Results />} />
+            <Route path="/Detail" element={<Detail />} />
+            <Route path="/Navigate" element={<NavigatePage />} />
+            <Route path="/Rate" element={<Rate />} />
+            <Route path="/SavePrompt" element={<SavePrompt />} />
+            <Route path="/ThankYou" element={<ThankYou />} />
+            <Route path="/Saved" element={<Saved />} />
+            <Route path="/" element={<Navigate to="/Home" replace />} />
+            <Route path="*" element={<PageNotFound />} />
+          </Routes>
+        </Router>
+        <Toaster />
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }
-
-export default App;

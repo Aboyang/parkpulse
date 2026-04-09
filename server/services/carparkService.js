@@ -24,8 +24,7 @@ class CarparkAvailabilityService {
     const encoded = encodeURIComponent(address);
     const url = `https://www.onemap.gov.sg/api/common/elastic/search?searchVal=${encoded}&returnGeom=Y&getAddrDetails=Y&pageNum=1`;
     
-    const authToken = this.ONEMAP_API_KEY; // Set in .env
-
+    const authToken = this.ONEMAP_API_KEY;
     const { data } = await axios.get(url, {
       headers: {
         Authorization: authToken,
@@ -193,3 +192,18 @@ export default CarparkAvailabilityService;
 // const c = new CarparkAvailabilityService();
 // const carparks = await c.findCarparks("Ang Mo Kio Central Market & Food Centre", 500)
 // console.log(carparks);
+
+
+(async () => {
+  const c = new CarparkAvailabilityService();
+  try {
+    const res = await c.getGeocode("NANYANG TECHNOLOGICAL UNIVERSITY (BLK 1) (HALL OF RESIDENCE 2)");
+    console.log(res);
+  } catch (err) {
+    console.error(err);
+  }
+})();
+
+  // easting: 10937.31900278171,
+  // northing: 36583.738124428164,
+  // port: 3000
