@@ -52,7 +52,7 @@ frontend/
         └── index.ts
 ```
 
---
+---
 
 ## Description
 
