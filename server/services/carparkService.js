@@ -69,6 +69,7 @@ class CarparkAvailabilityService {
 
     // Step 2: Fetch availability
     const availabilityData = await this.fetchCarparkAvailability();
+    console.log(`>>> Fetching availability for carparks: ${nearby.map((c) => c.carpark.carparkNo).join(", ")}`);
 
     // Step 3: Enrich each carpark with availability + ratings
     const enriched = await Promise.all(
@@ -119,6 +120,7 @@ class CarparkAvailabilityService {
     const geo = await this.getGeocode(address);
     let carparks = await this.searchNearbyCarpark(geo.latitude, geo.longitude, radius, evCharging);
     carparks = this.sortByAvailability(carparks);
+    console.log(">>> Final carparks:", carparks.map(c => `${c.carpark_no} (${c.available_lots} lots)`));
     return carparks;
   }
 }
