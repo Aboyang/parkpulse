@@ -1,4 +1,3 @@
-// authRoute.js
 import express from "express";
 import { AuthService } from "../services/authService.js"; // adjust path if needed
 

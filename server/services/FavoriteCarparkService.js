@@ -1,8 +1,8 @@
-// FavoriteService.js
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, QueryCommand, DeleteCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { carparkDB } from "../utils/carparkDB.js";
-import { svy21ToLatLon } from "../utils/coordConverter.js";
+import { Carpark } from "../models/carpark.js";
+import { FavoriteCarpark } from "../models/favoriteCarpark.js";
 
 class FavoriteCarparkService {
   constructor() {
@@ -11,86 +11,48 @@ class FavoriteCarparkService {
     this.tableName = "favorites";
   }
 
-  // Add favorite: only store userId + carparkId
   async addFavorite(userId, carparkId) {
-    const params = {
+    const favorite = new FavoriteCarpark({ userId, carparkId });
+
+    await this.db.send(new PutCommand({
       TableName: this.tableName,
-      Item: {
-        userId,
-        carparkId,
-        createdAt: new Date().toISOString(),
-      },
-    };
+      Item: favorite.toDB(),
+    }));
 
-    await this.db.send(new PutCommand(params));
-
-    return { userId, carparkId };
+    return favorite.toDB();
   }
 
-  // Get all favorites and append info from carparkDB
   async getFavorites(userId) {
-    const params = {
+    const result = await this.db.send(new QueryCommand({
       TableName: this.tableName,
       KeyConditionExpression: "userId = :uid",
       ExpressionAttributeValues: { ":uid": userId },
-    };
+    }));
 
-    const result = await this.db.send(new QueryCommand(params));
     const favorites = result.Items || [];
 
-    // Append full carpark info from carparkDB
-    const favoritesWithInfo = favorites.map(fav => {
-      const carpark = carparkDB.find(c => c.car_park_no === fav.carparkId);
-
-      // Determine operating hours
-      let operating_hours = "Unknown";
-      if (carpark.short_term_parking === "NO") {
-        operating_hours = "Season parking only";
-      } else if (
-        carpark.short_term_parking === "WHOLE DAY" &&
-        carpark.night_parking === "YES"
-      ) {
-        operating_hours = "24 hrs";
-      } else {
-        operating_hours = carpark.short_term_parking;
-      }
-
-      const { latitude: lat, longitude: lon } = svy21ToLatLon(
-        parseFloat(carpark.x_coord),
-        parseFloat(carpark.y_coord)
-      );
-
-      return {
-        ...fav,
-        carparkName: carpark?.address || "Unknown",
-        latitude: lat,
-        longitude: lon,
-        operating_hours
-      };
+    // Reuse Carpark entity — kills the duplicated operating hours + coord logic
+    return favorites.map((item) => {
+      const favorite = FavoriteCarpark.fromDB(item);
+      const raw = carparkDB.find((c) => c.car_park_no === favorite.carparkId);
+      const carpark = new Carpark(raw);
+      return favorite.toJSON(carpark);
     });
-
-    return favoritesWithInfo;
   }
 
-  // Remove favorite
   async removeFavorite(userId, carparkId) {
-    const params = {
+    await this.db.send(new DeleteCommand({
       TableName: this.tableName,
       Key: { userId, carparkId },
-    };
-
-    await this.db.send(new DeleteCommand(params));
+    }));
     return true;
   }
 
-  // Check if favorite
   async isFavorite(userId, carparkId) {
-    const params = {
+    const result = await this.db.send(new GetCommand({
       TableName: this.tableName,
       Key: { userId, carparkId },
-    };
-
-    const result = await this.db.send(new GetCommand(params));
+    }));
     return !!result.Item;
   }
 }

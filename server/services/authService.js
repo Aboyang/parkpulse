@@ -11,6 +11,7 @@ import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dyn
 import crypto, { randomUUID } from "crypto";
 import dotenv from "dotenv";
 import path from "path";
+import { User } from "../models/user.js";
 
 dotenv.config({ path: path.resolve("../../.env") });
 
@@ -27,9 +28,6 @@ export class AuthService {
     this.docClient = DynamoDBDocumentClient.from(ddbClient);
   }
 
-  /* =============================
-     HELPER: SECRET HASH
-  ============================ */
   getSecretHash(username) {
     if (!this.appClientSecret) return undefined;
     return crypto
@@ -38,9 +36,6 @@ export class AuthService {
       .digest("base64");
   }
 
-  /* =============================
-     SIGN UP
-  ============================ */
   async signUp(email, password, name) {
     const username = randomUUID();
 
@@ -56,26 +51,20 @@ export class AuthService {
     });
 
     const result = await this.cognitoClient.send(command);
-    const userId = result.UserSub;
+
+    // Build User entity from Cognito result
+    const user = new User({ userId: result.UserSub, email, name });
 
     await this.docClient.send(
       new PutCommand({
         TableName: this.usersTable,
-        Item: {
-          userId,
-          email,
-          name,
-          createdAt: new Date().toISOString(),
-        },
+        Item: user.toDB(),         // entity handles its own DB shape
       })
     );
 
-    return { userId, email, name };
+    return user.toJSON();
   }
 
-  /* =============================
-     CONFIRM SIGN UP
-  ============================ */
   async confirmSignUp(email, code) {
     const command = new ConfirmSignUpCommand({
       ClientId: this.appClientId,
@@ -88,9 +77,6 @@ export class AuthService {
     return { message: "User confirmed successfully" };
   }
 
-  /* =============================
-     LOGIN
-  ============================ */
   async login(email, password) {
     const command = new InitiateAuthCommand({
       AuthFlow: "USER_PASSWORD_AUTH",
@@ -108,76 +94,48 @@ export class AuthService {
       throw new Error("Authentication failed");
     }
 
-    const { IdToken, AccessToken, RefreshToken } = result.AuthenticationResult;
+    const { IdToken, AccessToken } = result.AuthenticationResult;
 
-    // Decode JWT payload to get userId (sub)
-    const payload = JSON.parse(Buffer.from(IdToken.split(".")[1], "base64url").toString("utf8"));
+    const payload = JSON.parse(
+      Buffer.from(IdToken.split(".")[1], "base64url").toString("utf8")
+    );
     const userId = payload.sub;
 
     const data = await this.docClient.send(
       new GetCommand({ TableName: this.usersTable, Key: { userId } })
     );
 
-    // Debug log to verify user data retrieval
-    console.log("login success:", { userId, email, name: data.Item?.name });
+    // Rehydrate User entity from DynamoDB row
+    const user = User.fromDB(data.Item);
 
-    return { 
-      token: IdToken, 
+    console.log("login success:", { userId, email, name: user.name });
+
+    return {
+      token: IdToken,
       accessToken: AccessToken,
-      userId: userId,
-      name: data.Item?.name || "Unknown",
+      userId: user.userId,
+      name: user.name,
     };
   }
 
-  /* =============================
-     GET USER PROFILE
-  ============================ */
   async getUserProfile(userId) {
     const data = await this.docClient.send(
       new GetCommand({ TableName: this.usersTable, Key: { userId } })
     );
-    return data.Item ?? null;
+
+    if (!data.Item) return null;
+
+    // Return as entity, toJSON() strips internal fields if needed
+    return User.fromDB(data.Item).toJSON();
   }
 
-  /* =============================
-      LOGOUT
-    ============================ */
   async logout(accessToken) {
     if (!accessToken) throw new Error("Access token is required for logout");
 
-    const command = new GlobalSignOutCommand({
-      AccessToken: accessToken,
-    });
-
+    const command = new GlobalSignOutCommand({ AccessToken: accessToken });
     await this.cognitoClient.send(command);
 
-    // Debug log to confirm logout
     console.log("User logged out successfully");
     return { message: "User logged out successfully" };
   }
 }
-
-// Testing
-// async function runTests() {
-//   const auth = new AuthService();
-
-//   try {
-//     const randomEmail = "jayden@gmail.com";
-
-//     console.log("\n=== Testing signUp ===");
-//     const newUser = await auth.signUp(randomEmail, "Password123!", "Jayden");
-//     console.log("signUp success:", newUser);
-
-//     console.log("\n=== Testing login ===");
-//     const loginResult = await auth.login(randomEmail, "Password123!");
-//     console.log("login success:", loginResult);
-
-//     console.log("\n=== Testing getUserProfile ===");
-//     const profile = await auth  .getUserProfile(newUser.userId);
-//     console.log("getUserProfile success:", profile);
-//   } catch (err) {
-//     console.error("Test failed:", err.name, err.message);
-//   }
-// }
-
-// runTests();

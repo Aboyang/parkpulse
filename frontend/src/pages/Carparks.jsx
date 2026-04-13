@@ -24,7 +24,7 @@ const SORT_OPTIONS = [
 
 // ─── component ──────────────────────────────────────────────────────────────
 
-export default function Results() {
+export default function Carparks() {
   const navigate       = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -165,7 +165,7 @@ export default function Results() {
             carparks={filtered}
             center={center}
             onMarkerClick={(cp) =>
-              navigate(`/Detail?id=${encodeURIComponent(cp.id)}`, {
+              navigate(`/Carpark?id=${encodeURIComponent(cp.id)}`, {
                 state: { carpark: cp },
               })
             }
@@ -219,7 +219,7 @@ export default function Results() {
                     carpark={cp}
                     distance={formatDistance(cp.distance)}
                     onClick={() =>
-                      navigate(`/Detail?id=${encodeURIComponent(cp.id)}`, {
+                      navigate(`/Carpark?id=${encodeURIComponent(cp.id)}`, {
                         state: { carpark: cp },
                       })
                     }

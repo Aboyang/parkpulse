@@ -135,7 +135,7 @@ export default function Saved() {
                   <div className="flex items-center gap-2 ml-2">
                     <button
                       onClick={() =>
-                        navigate(`/Detail?id=${item.carparkId}`, {
+                        navigate(`/Carpark?id=${item.carparkId}`, {
                           state: {
                             carpark: {
                               id: item.carparkId,

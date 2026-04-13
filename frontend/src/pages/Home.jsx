@@ -49,7 +49,7 @@ export default function Home() {
       radius,
     });
 
-    navigate(`/Results?${params.toString()}`);
+    navigate(`/Carparks?${params.toString()}`);
   };
 
   const handleLogout = async () => {

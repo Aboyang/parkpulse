@@ -10,8 +10,8 @@ import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 // Pages
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
-import Results from "./pages/Results";
-import Detail from "./pages/Detail";
+import Carparks from "./pages/Carparks";
+import Carpark from "./pages/Carpark";
 import NavigatePage from "./pages/Navigate";
 import Rate from "./pages/Rate";
 import SavePrompt from "./pages/SavePrompt";
@@ -49,8 +49,8 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Navigate to="/Home" replace />} />
 
       <Route path="/Home" element={<Home />} />
-      <Route path="/Results" element={<Results />} />
-      <Route path="/Detail" element={<Detail />} />
+      <Route path="/Carparks" element={<Carparks />} />
+      <Route path="/Carpark" element={<Carparks />} />
       <Route path="/Navigate" element={<NavigatePage />} />
       <Route path="/Rate" element={<Rate />} />
       <Route path="/SavePrompt" element={<SavePrompt />} />
@@ -72,8 +72,8 @@ export default function App() {
           <Routes>
             <Route path="/Auth" element={<Auth />} />
             <Route path="/Home" element={<Home />} />
-            <Route path="/Results" element={<Results />} />
-            <Route path="/Detail" element={<Detail />} />
+            <Route path="/Carparks" element={<Carparks />} />
+            <Route path="/Carpark" element={<Carpark />} />
             <Route path="/Navigate" element={<NavigatePage />} />
             <Route path="/Rate" element={<Rate />} />
             <Route path="/SavePrompt" element={<SavePrompt />} />

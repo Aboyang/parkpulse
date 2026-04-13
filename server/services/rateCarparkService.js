@@ -1,89 +1,46 @@
-// RateCarparkService.js
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { CarparkRating } from "../models/carparkRating.js";
 
 class RateCarparkService {
   constructor() {
     const client = new DynamoDBClient({ region: "ap-southeast-1" });
     this.db = DynamoDBDocumentClient.from(client);
-    this.tableName = "rating"; // DynamoDB table for ratings
+    this.tableName = "rating";
   }
 
-  // Rate a carpark with userId
   async rateCarpark(carparkId, userId, rating, comment) {
-    // 1. Get current rating info
-    const getParams = {
+    const current = await this.db.send(new GetCommand({
       TableName: this.tableName,
       Key: { carparkId },
-    };
-    const current = await this.db.send(new GetCommand(getParams));
+    }));
 
-    let newAvgRating = rating;
-    let newTotalRatings = 1;
-    let newComments = [{ userId, comment }];
+    // Rehydrate or create fresh entity
+    const carparkRating = current.Item
+      ? CarparkRating.fromDB(current.Item)
+      : CarparkRating.empty(carparkId);
 
-    if (current.Item) {
-      const { averageRating, totalRatings, comments } = current.Item;
-      newTotalRatings = totalRatings + 1;
-      newAvgRating = (averageRating * totalRatings + rating) / newTotalRatings;
-      newComments = comments ? [...comments, { userId, comment }] : [{ userId, comment }];
-    }
+    // Business logic now lives on the entity
+    carparkRating.addRating(userId, rating, comment);
 
-    // 2. Put or update the item
-    const putParams = {
+    await this.db.send(new PutCommand({
       TableName: this.tableName,
-      Item: {
-        carparkId,
-        averageRating: newAvgRating,
-        totalRatings: newTotalRatings,
-        comments: newComments,
-      },
-    };
+      Item: carparkRating.toDB(),
+    }));
 
-    await this.db.send(new PutCommand(putParams));
-    return { carparkId, averageRating: newAvgRating, totalRatings: newTotalRatings };
+    return carparkRating.toJSON();
   }
 
-  // Get carpark rating
   async getCarparkRating(carparkId) {
-    const params = {
+    const result = await this.db.send(new GetCommand({
       TableName: this.tableName,
       Key: { carparkId },
-    };
-    const result = await this.db.send(new GetCommand(params));
+    }));
 
-    if (!result.Item) {
-      return { carparkId, averageRating: 0, totalRatings: 0, comments: [] };
-    }
+    if (!result.Item) return CarparkRating.empty(carparkId).toJSON();
 
-    return result.Item;
+    return CarparkRating.fromDB(result.Item).toJSON();
   }
 }
 
 export default RateCarparkService;
-
-// Test the RateCarparkService
-// async function testRateCarpark() {
-//   const service = new RateCarparkService();
-//   const carparkId = "A70";
-
-//   console.log("=== Adding first rating ===");
-//   let result = await service.rateCarpark(carparkId, "Aboyang", 4, "Easy to find parking spots.");
-//   console.log(result);
-
-//   console.log("=== Adding second rating ===");
-//   result = await service.rateCarpark(carparkId, "Yang", 5, "Very convenient location.");
-//   console.log(result);
-
-//   console.log("=== Adding third rating ===");
-//   result = await service.rateCarpark(carparkId, "Jay", 3, "Can get crowded during peak hours.");
-//   console.log(result);
-
-//   console.log("=== Fetching current rating ===");
-//   const currentRating = await service.getCarparkRating(carparkId);
-//   console.log(currentRating);
-// }
-
-// testRateCarpark()
-//   .then(() => console.log("Test completed"))
-//   .catch(err => console.error("Test failed:", err));

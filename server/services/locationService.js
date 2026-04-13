@@ -1,28 +1,16 @@
-class LocationService {
-  constructor() {}
+import { Location } from "../models/location.js";
 
+class LocationService {
   async getCurrentLocation() {
     try {
-      const res = await fetch('http://ip-api.com/json/');
+      const res = await fetch("http://ip-api.com/json/");
       const data = await res.json();
-
-      return {
-        lat: data.lat,
-        lng: data.lon
-      }
-
+      return Location.fromIPApi(data).toJSON();
     } catch (err) {
-      console.error('Failed to get location:', err);
+      console.error("Failed to get location:", err);
       return null;
     }
   }
 }
 
 export default LocationService;
-
-// Testing
-// (async () => {
-//   const location = new LocationService();
-//   const coord = await location.getCurrentLocation();
-//   console.log(coord);
-// })();

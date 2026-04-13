@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 
-export default function Detail() {
+export default function Carpark() {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme } = useTheme();
