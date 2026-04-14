@@ -77,6 +77,7 @@ export default function Carparks() {
 
         const res      = await axios.get('http://localhost:3000/api/carparks', { params });
         const carparks = res.data.carparks || [];
+        console.log(carparks)
 
         return carparks.map((cp) => ({
           id:                   cp.carpark_no,

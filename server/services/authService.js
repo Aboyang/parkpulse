@@ -1,11 +1,4 @@
-import {
-  CognitoIdentityProviderClient,
-  SignUpCommand,
-  ConfirmSignUpCommand,
-  InitiateAuthCommand,
-  GlobalSignOutCommand,
-} from "@aws-sdk/client-cognito-identity-provider";
-
+import { CognitoIdentityProviderClient, SignUpCommand, ConfirmSignUpCommand, InitiateAuthCommand, GlobalSignOutCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import crypto, { randomUUID } from "crypto";
@@ -139,3 +132,41 @@ export class AuthService {
     return { message: "User logged out successfully" };
   }
 }
+
+// (async () => {
+//   try {
+//     const authService = new AuthService();
+
+//     console.log(">>> Starting Auth E2E Test...\n");
+
+//     // --- Step 1: Sign Up ---
+//     const email = `test_${Date.now()}@example.com`; // unique email
+//     const password = "Test1234!";
+//     const name = "Test User";
+
+//     console.log(">>> Signing up user...");
+//     const user = await authService.signUp(email, password, name);
+//     console.log("Sign up success:", user);
+
+//     // --- Step 2: Login ---
+//     console.log("\n>>> Logging in...");
+//     const loginRes = await authService.login(email, password);
+//     console.log("Login success:", loginRes);
+
+//     const { userId, accessToken } = loginRes;
+
+//     // --- Step 3: Get Profile ---
+//     console.log("\n>>> Fetching user profile...");
+//     const profile = await authService.getUserProfile(userId);
+//     console.log("Profile:", profile);
+
+//     // --- Step 4: Logout ---
+//     console.log("\n>>> Logging out...");
+//     const logoutRes = await authService.logout(accessToken);
+//     console.log("Logout success:", logoutRes);
+
+//   } catch (error) {
+//     console.error("Test failed:", error.message);
+//     console.error(error);
+//   }
+// })();

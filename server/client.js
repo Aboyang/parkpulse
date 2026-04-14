@@ -1,300 +1,51 @@
-// // client.js
-// import fetch from "node-fetch";
+import axios from "axios";
 
-// const API_BASE = "http://localhost:3000/api/auth"; // base URL for auth endpoints
+const BASE_URL = "http://localhost:3000/api/auth";
 
-// /* =============================
-//    HELPER: pretty log
-// ============================= */
-// const log = (title, data) => {
-//   console.log(`\n=== ${title} ===`);
-//   console.log(data);
-// };
+(async () => {
+  try {
+    console.log(">>> Starting API E2E टेस्ट...\n");
 
-// /* =============================
-//    SIGN UP
-// ============================= */
-// async function signUp(email, password, name) {
-//   const res = await fetch(`${API_BASE}/signup`, {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify({ email, password, name }),
-//   });
+    // --- Step 1: Sign Up ---
+    const email = `test_${Date.now()}@example.com`;
+    const password = "Test1234!";
+    const name = "Test User";
 
-//   const data = await res.json();
-//   if (!res.ok) throw new Error(data.error || "Sign up failed");
-//   return data.user;
-// }
+    console.log(">>> Signing up...");
+    const signupRes = await axios.post(`${BASE_URL}/signup`, {
+      email,
+      password,
+      name,
+    });
 
-// /* =============================
-//    CONFIRM SIGN UP
-// ============================= */
-// async function confirmSignUp(email, code) {
-//   const res = await fetch(`${API_BASE}/confirm`, {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify({ email, code }),
-//   });
+    console.log("Signup:", signupRes.data);
 
-//   const data = await res.json();
-//   if (!res.ok) throw new Error(data.error || "Confirm sign up failed");
-//   return data;
-// }
+    // --- Step 2: Login ---
+    console.log("\n>>> Logging in...");
+    const loginRes = await axios.post(`${BASE_URL}/login`, {
+      email,
+      password,
+    });
 
-// /* =============================
-//    LOGIN
-// ============================= */
-// async function login(email, password) {
-//   const res = await fetch(`${API_BASE}/login`, {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify({ email, password }),
-//   });
+    console.log("Login:", loginRes.data);
 
-//   const data = await res.json();
-//   if (!res.ok) throw new Error(data.error || "Login failed");
-//   return data; // includes token, accessToken, and user
-// }
+    const { userId, accessToken } = loginRes.data;
 
-// /* =============================
-//    LOGOUT
-// ============================= */
-// async function logout(accessToken) {
-//   const res = await fetch(`${API_BASE}/logout`, {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify({ accessToken }),
-//   });
+    // --- Step 3: Get Profile ---
+    console.log("\n>>> Fetching profile...");
+    const profileRes = await axios.get(`${BASE_URL}/profile/${userId}`);
+    console.log("Profile:", profileRes.data);
 
-//   const data = await res.json();
-//   if (!res.ok) throw new Error(data.error || "Logout failed");
-//   return data;
-// }
+    // --- Step 4: Logout ---
+    console.log("\n>>> Logging out...");
+    const logoutRes = await axios.post(`${BASE_URL}/logout`, {
+      accessToken,
+    });
 
-// /* =============================
-//    GET USER PROFILE
-// ============================= */
-// async function getUserProfile(userId) {
-//   const res = await fetch(`${API_BASE}/profile/${userId}`);
-//   const data = await res.json();
-//   if (!res.ok) throw new Error(data.error || "Get profile failed");
-//   return data;
-// }
+    console.log("Logout:", logoutRes.data);
 
-// /* =============================
-//    DEMO FLOW
-// ============================= */
-// async function demo() {
-//   try {
-//     const email = "jayden@example.com";
-//     const password = "Password123!";
-//     const name = "Jayden";
-
-//     // Sign up
-//     const newUser = await signUp(email, password, name);
-//     log("SignUp", newUser);
-
-//     // If you have auto-confirm enabled in Cognito, skip confirm step
-//     // Otherwise, you need to provide the code sent via email
-//     // await confirmSignUp(email, "123456");
-
-//     // Login
-//     const loginResult = await login(email, password);
-//     log("Login", loginResult);
-
-//     // Get profile
-//     const profile = await getUserProfile(loginResult.user.userId);
-//     log("User Profile", profile);
-
-//     // Logout
-//     const logoutResult = await logout(loginResult.accessToken);
-//     log("Logout", logoutResult);
-
-//   } catch (err) {
-//     console.error("Demo failed:", err.message);
-//   }
-// }
-
-// demo();
-
-
-// // Testing redis caching
-// import fetch from "node-fetch";
-
-// const address = "Ang Mo Kio Market";
-// const radius = 500;
-
-// const URL = `http://localhost:3000/api/carparks?address=${encodeURIComponent(address)}&radius=${radius}`;
-
-// console.log(URL);
-
-// const ITERATIONS = 50;
-
-// async function runTest() {
-//   let totalTime = 0;
-
-//   for (let i = 0; i < ITERATIONS; i++) {
-//     const start = performance.now();
-
-//     const res = await fetch(URL);
-//     const data = await res.json();
-
-//     const end = performance.now();
-//     const duration = end - start;
-
-//     console.log(
-//       `Request ${i + 1}: ${duration.toFixed(2)} ms | carparks=${data.carparks?.length}`
-//     );
-
-//     totalTime += duration;
-//   }
-
-//   console.log("\n--- RESULT ---");
-//   console.log(`Average: ${(totalTime / ITERATIONS).toFixed(2)} ms`);
-// }
-
-// runTest();
-
-
-// Testing load balancing across multiple server instances
-// import fetch from "node-fetch";
-
-// const locations = [
-//   "ALBERT CENTRE MARKET & FOOD CENTRE",
-//   "ANG MO KIO 628 MARKET",
-//   "BEDOK 85 MARKET & FOOD CENTRE",
-//   "CHAI CHEE MARKET",
-//   "CHOA CHU KANG MARKET",
-//   "CLEMENTI MARKET",
-//   "GEYLANG SERAI MARKET",
-//   "HOUGANG 308 MARKET",
-//   "JURONG WEST 505 MARKET",
-//   "KALLANG MARKET"
-// ];
-
-// const radius = 500;
-// const URL_BASE = `http://localhost:8080/api/carparks`;
-
-// // Track port distribution
-// const portCount = {};
-
-// async function makeRequest(i, address) {
-//   const start = Date.now();
-//   try {
-//     const res = await fetch(`${URL_BASE}?address=${encodeURIComponent(address)}&radius=${radius}`);
-//     const data = await res.json();
-//     const end = Date.now();
-//     const duration = end - start;
-
-//     const carparkCount = Array.isArray(data.carparks) ? data.carparks.length : 0;
-//     const port = data.port || "unknown";
-
-//     // Track how many requests each server handled
-//     portCount[port] = (portCount[port] || 0) + 1;
-
-//     console.log(
-//       `Request ${i + 1}`.padEnd(12, " ") +
-//       `| ${address.padEnd(40, " ")} | port=${port.padEnd(5, " ")} | carparks=${carparkCount.toString().padEnd(5, " ")} | time=${duration}ms`
-//     );
-//   } catch (err) {
-//     const end = Date.now();
-//     console.error(`Request ${i + 1} (${address}) failed after ${end - start}ms:`, err.message);
-//   }
-// }
-
-// async function runTest() {
-//   const totalRequests = 1000;
-//   const batchSize = 10; // 10 requests concurrently
-//   let requestCounter = 0;
-
-//   console.log("--- Starting Test ---");
-//   const startTime = Date.now();
-
-//   while (requestCounter < totalRequests) {
-//     const batch = [];
-//     for (let i = 0; i < batchSize && requestCounter < totalRequests; i++) {
-//       const address = locations[requestCounter % locations.length];
-//       batch.push(makeRequest(requestCounter, address));
-//       requestCounter++;
-//     }
-//     await Promise.all(batch);
-//   }
-
-//   const endTime = Date.now();
-//   console.log(`\n--- Test Complete ---`);
-//   console.log(`Total time taken: ${endTime - startTime} ms\n`);
-
-//   console.log("--- Server Distribution ---");
-//   Object.entries(portCount).forEach(([port, count]) => {
-//     console.log(`Port ${port}: ${count} requests`);
-//   });
-// }
-
-// runTest();
-
-
-
-// testing the rateCarpark API
-// testRateCarparkClient.js
-// import axios from "axios";
-
-// const BASE_URL = "http://localhost:3000/api/carparks";
-
-// async function testRateCarpark() {
-//   const testCases = [
-//     { carparkId: "A76", userId: "user1", rating: 4, comment: "Nice and spacious parking." },
-//     { carparkId: "A76", userId: "user2", rating: 5, comment: "Very convenient location." },
-//     { carparkId: "JM31", userId: "user3", rating: 3, comment: "Can get crowded in evenings." },
-//     { carparkId: "JM31", userId: "user4", rating: 4, comment: "Easy to find a spot in mornings." },
-//   ];
-
-//   // Rate carparks
-//   for (const tc of testCases) {
-//     try {
-//       const response = await axios.post(`${BASE_URL}/rate`, {
-//         carparkId: tc.carparkId,
-//         userId: tc.userId,
-//         rating: tc.rating,
-//         comment: tc.comment,
-//       });
-//       console.log(`Rated ${tc.carparkId}:`, response.data.data);
-//     } catch (err) {
-//       console.error(`Error rating ${tc.carparkId}:`, err.response?.data || err.message);
-//     }
-//   }
-
-//   // Fetch current ratings
-//   const carparks = ["A76", "JM31"];
-//   for (const cp of carparks) {
-//     try {
-//       const response = await axios.get(`${BASE_URL}/rating/${cp}`);
-//       console.log(`\nCurrent rating for ${cp}:`, response.data.data);
-//     } catch (err) {
-//       console.error(`Error fetching rating for ${cp}:`, err.response?.data || err.message);
-//     }
-//   }
-// }
-
-// testRateCarpark()
-//   .then(() => console.log("\nTest completed"))
-//   .catch(err => console.error("Test failed:", err));
-
-
-// testing fetchig current user location
-// import fetch from "node-fetch"; // if Node < 18, otherwise you can use global fetch
-
-// async function fetchLocation() {
-//   try {
-//     const res = await fetch("http://localhost:3000/api/location");
-//     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-//     const data = await res.json();
-//     console.log("Current SVY21 Coordinates:", data);
-//     return data;
-//   } catch (err) {
-//     console.error("Error fetching location:", err);
-//   }
-// }
-
-// // Run the function
-// fetchLocation();
+  } catch (error) {
+    console.error("API Test Failed:");
+    console.error(error.response?.data || error.message);
+  }
+})();

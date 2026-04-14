@@ -17,12 +17,17 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const [showPassword, setShowPassword] = useState(false);
+
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(''); // ✅ NEW
+
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setError('');
+    setSuccess(''); // ✅ reset both
 
     if (!email || !password) {
       setError('Email and password are required');
@@ -68,9 +73,9 @@ export default function Auth() {
       }
 
       if (isSignup) {
-        // after signup → switch to login
+        // ✅ signup success
         setIsSignup(false);
-        setError('Account created. Please log in.');
+        setSuccess('Account created successfully. Please log in.');
       } else {
         // login success
         localStorage.setItem('token', data.accessToken);
@@ -119,6 +124,14 @@ export default function Auth() {
                 : 'Sign in to your account'}
             </p>
 
+            {/* ✅ SUCCESS MESSAGE */}
+            {success && (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 mb-4">
+                <p className="text-sm text-green-400">{success}</p>
+              </div>
+            )}
+
+            {/* ❌ ERROR MESSAGE */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-4">
                 <p className="text-sm text-red-400">{error}</p>
@@ -135,7 +148,10 @@ export default function Auth() {
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <Input
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setSuccess('');
+                      }}
                       className="pl-10 h-12 bg-slate-900/50 border-slate-700"
                     />
                   </div>
@@ -150,7 +166,10 @@ export default function Auth() {
                   <Input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setSuccess('');
+                    }}
                     className="pl-10 h-12 bg-slate-900/50 border-slate-700"
                   />
                 </div>
@@ -164,7 +183,10 @@ export default function Auth() {
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setSuccess('');
+                    }}
                     className="pl-10 pr-10 h-12 bg-slate-900/50 border-slate-700"
                   />
                   <button
@@ -186,7 +208,10 @@ export default function Auth() {
                   <Input
                     type="password"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setSuccess('');
+                    }}
                     className="h-12 bg-slate-900/50 border-slate-700"
                   />
                 </div>
@@ -208,6 +233,7 @@ export default function Auth() {
                 onClick={() => {
                   setIsSignup(!isSignup);
                   setError('');
+                  setSuccess('');
                 }}
                 className="text-teal-400"
               >

@@ -1,12 +1,10 @@
 import express from "express";
-import { AuthService } from "../services/authService.js"; // adjust path if needed
+import { AuthService } from "../services/authService.js";
 
 const router = express.Router();
 const auth = new AuthService();
 
-/* =============================
-   SIGN UP
-============================= */
+// SIGN UP
 router.post("/signup", async (req, res) => {
   const { email, password, name } = req.body;
 
@@ -23,9 +21,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-/* =============================
-   CONFIRM SIGN UP
-============================= */
+// CONFIRM SIGN UP
 router.post("/confirm", async (req, res) => {
   const { email, code } = req.body;
 
@@ -42,9 +38,7 @@ router.post("/confirm", async (req, res) => {
   }
 });
 
-/* =============================
-   LOGIN
-============================= */
+// LOGIN
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -61,10 +55,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-/* =============================
-   LOGOUT
-   Requires accessToken in request body
-============================= */
+// LOGOUT
 router.post("/logout", async (req, res) => {
   const { accessToken } = req.body;
 
@@ -81,9 +72,7 @@ router.post("/logout", async (req, res) => {
   }
 });
 
-/* =============================
-   GET USER PROFILE
-============================= */
+// GET USER PROFILE
 router.get("/profile/:userId", async (req, res) => {
   const { userId } = req.params;
 
