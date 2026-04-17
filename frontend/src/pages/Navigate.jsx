@@ -33,16 +33,18 @@ const destIcon = L.divIcon({
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function fetchUserPosition() {
-  try {
-    const res = await fetch('http://localhost:3000/api/location');
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data?.lat != null && data?.lng != null) return [data.lat, data.lng];
-    return null;
-  } catch {
-    return null;
-  }
+function getBrowserPosition() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve([pos.coords.latitude, pos.coords.longitude]),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  });
 }
 
 async function fetchRoute(start, end) {
@@ -78,8 +80,8 @@ function MapUpdater({ center }) {
 const POLL_INTERVAL_MS = 3000;
 
 export default function Navigate() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate  = useNavigate();
+  const location  = useLocation();
   const { theme } = useTheme();
 
   const [muted,          setMuted]          = useState(false);
@@ -110,7 +112,8 @@ export default function Navigate() {
     window.speechSynthesis.speak(utt);
   }
 
-  // ── Init: get position → fetch route → start polling ──────────────────────
+  // ── Init: get browser position → fetch route → start polling ──────────────
+
   useEffect(() => {
     if (!destination) return;
 
@@ -118,10 +121,14 @@ export default function Navigate() {
 
     const init = async () => {
       setLocationStatus('requesting');
-      const pos = await fetchUserPosition();
+
+      const pos = await getBrowserPosition();
       if (cancelled) return;
 
-      if (!pos) { setLocationStatus('denied'); return; }
+      if (!pos) {
+        setLocationStatus('denied');
+        return;
+      }
 
       setLocationStatus('granted');
 
@@ -139,9 +146,26 @@ export default function Navigate() {
         return;
       }
 
+      // Poll browser location + refresh route every 3s
       pollRef.current = setInterval(async () => {
-        const updated = await fetchUserPosition();
-        if (!cancelled && updated) setUserPos(updated);
+        if (cancelled) return;
+
+        const updated = await getBrowserPosition();
+        if (cancelled || !updated) return;
+
+        setUserPos(updated);
+
+        try {
+          const { pts, steps, totalDist } = await fetchRoute(updated, destination);
+          if (cancelled) return;
+
+          totalDistRef.current = totalDist;
+          stepsRef.current     = steps;
+          setRoute(pts);
+          setNavSteps(steps);
+        } catch (err) {
+          console.error('Route refresh failed:', err);
+        }
       }, POLL_INTERVAL_MS);
     };
 
@@ -155,27 +179,52 @@ export default function Navigate() {
   }, [destination?.[0], destination?.[1]]);
 
   // ── Retry ──────────────────────────────────────────────────────────────────
+
   const handleRetry = async () => {
     setLocationStatus('requesting');
-    const pos = await fetchUserPosition();
-    if (!pos) { setLocationStatus('denied'); return; }
+
+    const pos = await getBrowserPosition();
+    if (!pos) {
+      setLocationStatus('denied');
+      return;
+    }
 
     setLocationStatus('granted');
-    const { pts, steps, totalDist } = await fetchRoute(pos, destination);
-    totalDistRef.current = totalDist;
-    stepsRef.current     = steps;
-    setRoute(pts);
-    setNavSteps(steps);
-    setUserPos(pos);
+
+    try {
+      const { pts, steps, totalDist } = await fetchRoute(pos, destination);
+      totalDistRef.current = totalDist;
+      stepsRef.current     = steps;
+      setRoute(pts);
+      setNavSteps(steps);
+      setUserPos(pos);
+    } catch {
+      setLocationStatus('denied');
+      return;
+    }
 
     if (pollRef.current) clearInterval(pollRef.current);
+
     pollRef.current = setInterval(async () => {
-      const updated = await fetchUserPosition();
-      if (updated) setUserPos(updated);
+      const updated = await getBrowserPosition();
+      if (!updated) return;
+
+      setUserPos(updated);
+
+      try {
+        const { pts, steps, totalDist } = await fetchRoute(updated, destination);
+        totalDistRef.current = totalDist;
+        stepsRef.current     = steps;
+        setRoute(pts);
+        setNavSteps(steps);
+      } catch (err) {
+        console.error('Route refresh failed:', err);
+      }
     }, POLL_INTERVAL_MS);
   };
 
   // ── Arrival check ──────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (!userPos || !destination || arrived) return;
     if (getDistanceM(userPos, destination) < 40) setArrived(true);
@@ -189,24 +238,27 @@ export default function Navigate() {
   }, [arrived]);
 
   // ── Remaining distance ─────────────────────────────────────────────────────
-  const remainingDist = route.length > 1 && userPos
-    ? (() => {
-        let minD = Infinity, closestIdx = 0;
-        route.forEach((p, i) => {
-          const d = getDistanceM(userPos, p);
-          if (d < minD) { minD = d; closestIdx = i; }
-        });
-        return route
-          .slice(closestIdx)
-          .reduce((sum, p, i, arr) => (i === 0 ? 0 : sum + getDistanceM(arr[i - 1], p)), 0);
-      })()
-    : (totalDistRef.current || 0);
+
+  const remainingDist =
+    route.length > 1 && userPos
+      ? (() => {
+          let minD = Infinity, closestIdx = 0;
+          route.forEach((p, i) => {
+            const d = getDistanceM(userPos, p);
+            if (d < minD) { minD = d; closestIdx = i; }
+          });
+          return route
+            .slice(closestIdx)
+            .reduce((sum, p, i, arr) => (i === 0 ? 0 : sum + getDistanceM(arr[i - 1], p)), 0);
+        })()
+      : totalDistRef.current || 0;
 
   const remainingMin = remainingDist > 0 ? Math.max(1, Math.round(remainingDist / (45000 / 60))) : 1;
-  const etaStr       = new Date(Date.now() + remainingMin * 60000)
+  const etaStr = new Date(Date.now() + remainingMin * 60000)
     .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   // ── Current nav step ───────────────────────────────────────────────────────
+
   const currentStepIndex = (() => {
     if (!navSteps.length || !userPos) return 0;
     let lastPassedIdx = 0;
@@ -233,11 +285,13 @@ export default function Navigate() {
   }, [currentStepIndex]);
 
   // ── Tile URL ───────────────────────────────────────────────────────────────
+
   const tileUrl = theme === 'dark'
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 
   // ── Loading / error screens ────────────────────────────────────────────────
+
   if (!carpark || !userPos || route.length === 0) {
     return (
       <div className="min-h-screen bg-slate-900 dark:bg-blue-50 flex flex-col items-center justify-center gap-6 px-8 text-white dark:text-slate-800">
@@ -248,7 +302,9 @@ export default function Navigate() {
             </div>
             <div className="text-center space-y-2">
               <p className="font-semibold text-lg">Acquiring Your Location</p>
-              <p className="text-slate-400 dark:text-slate-600 text-sm">Fetching your position…</p>
+              <p className="text-slate-400 dark:text-slate-600 text-sm">
+                Allow location access when prompted…
+              </p>
             </div>
             <div className="w-8 h-8 border-4 border-slate-700 border-t-teal-400 rounded-full animate-spin" />
           </>
@@ -269,7 +325,7 @@ export default function Navigate() {
             <div className="text-center space-y-2">
               <p className="font-semibold text-lg">Could Not Get Location</p>
               <p className="text-slate-400 dark:text-slate-600 text-sm">
-                The location service returned no data. Make sure your backend is running.
+                Please allow location access in your browser settings and try again.
               </p>
             </div>
             <button
@@ -288,6 +344,7 @@ export default function Navigate() {
   }
 
   // ── Split route into completed / remaining segments ────────────────────────
+
   const closestRouteIdx = (() => {
     let minD = Infinity, idx = 0;
     route.forEach((p, i) => {
@@ -296,10 +353,12 @@ export default function Navigate() {
     });
     return idx;
   })();
+
   const completedRoute = route.slice(0, closestRouteIdx + 1);
   const remainingRoute = route.slice(closestRouteIdx);
 
-  // ── Main render ────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   return (
     <div className="h-screen bg-slate-900 dark:bg-blue-50 text-white dark:text-slate-800 relative overflow-hidden">
 
@@ -372,7 +431,6 @@ export default function Navigate() {
           <TileLayer url={tileUrl} />
           <MapUpdater center={userPos} />
 
-          {/* Greyed-out completed segment */}
           {completedRoute.length >= 2 && (
             <Polyline
               positions={completedRoute}
@@ -380,7 +438,6 @@ export default function Navigate() {
             />
           )}
 
-          {/* Active remaining segment */}
           {remainingRoute.length >= 2 && (
             <Polyline
               positions={remainingRoute}
@@ -388,7 +445,7 @@ export default function Navigate() {
             />
           )}
 
-          <Marker position={userPos}    icon={userIcon} />
+          <Marker position={userPos}     icon={userIcon} />
           <Marker position={destination} icon={destIcon} />
         </MapContainer>
       </div>
@@ -409,7 +466,7 @@ export default function Navigate() {
         </div>
       )}
 
-      {/* ── Bottom bar: time / distance / ETA ── */}
+      {/* ── Bottom bar ── */}
       {!arrived && (
         <motion.div
           initial={{ y: 100 }}
