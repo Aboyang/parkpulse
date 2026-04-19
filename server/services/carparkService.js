@@ -58,6 +58,7 @@ class CarparkAvailabilityService {
   }
 
   async searchNearbyCarpark(latitude, longitude, radius, evCharging) {
+
     // Step 1: Build Carpark entities, filter + sort by distance
     const nearby = carparkDB
       .map((raw) => new Carpark(raw))

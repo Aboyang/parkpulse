@@ -12,6 +12,8 @@ ParkPulse SG allows you to locate nearest carparks to your destination, view the
 
 <img width="140" height="272" alt="Screenshot 2026-04-09 at 1 45 48 PM" src="https://github.com/user-attachments/assets/7c286399-d11f-406f-888a-6db9e8f69153" />
 
+Watch video demo here: https://youtu.be/AdSQKVfwq1s
+
 ## Project Setup
 
 This project consists of a **React frontend** and a **Node.js backend**.
@@ -65,6 +67,12 @@ ONEMAP_API_KEY=YOUR_ONEMAP_API_KEY_HERE
 
 # Data.gov.sg API key
 DATA_GOV_API_KEY=YOUR_DATA_GOV_API_KEY_HERE
+
+# AWS Configuration
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
+
 ```
 
 > **Note:** You must replace `YOUR_ONEMAP_API_KEY_HERE` and `YOUR_DATA_GOV_API_KEY_HERE` with your own API keys.
@@ -72,6 +80,7 @@ DATA_GOV_API_KEY=YOUR_DATA_GOV_API_KEY_HERE
 >
 > * **OneMap API key** from [https://www.onemap.gov.sg/docs/](https://www.onemap.gov.sg/docs/)
 > * **Data.gov.sg API key** from [https://data.gov.sg/developer](https://data.gov.sg/developer)
+> * **AWS API keys** from [https://console.aws.amazon.com/console/home](https://console.aws.amazon.com/console/home)
 
 4. Start the backend server:
 
