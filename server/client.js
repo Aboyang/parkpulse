@@ -4,7 +4,7 @@ const BASE_URL = "http://localhost:3000/api/auth";
 
 (async () => {
   try {
-    console.log(">>> Starting API E2E टेस्ट...\n");
+    console.log("=== API Client Test ===");
 
     // --- Step 1: Sign Up ---
     const email = `test_${Date.now()}@example.com`;
@@ -48,4 +48,6 @@ const BASE_URL = "http://localhost:3000/api/auth";
     console.error("API Test Failed:");
     console.error(error.response?.data || error.message);
   }
+
+  console.log("=== API Client Test Completed ===");
 })();
