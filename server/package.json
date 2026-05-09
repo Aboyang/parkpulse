@@ -1,5 +1,8 @@
 {
   "type": "module",
+  "scripts": {
+    "test": "vitest"
+  },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1022.0",
     "@aws-sdk/client-dynamodb": "^3.1021.0",
@@ -13,5 +16,8 @@
     "redis": "^5.11.0",
     "svy21": "^1.0.0",
     "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.5"
   }
 }

@@ -1,0 +1,60 @@
+name: CI/CD Pipeline  # the name shown in GitHub Actions tab
+
+on:  # what triggers this pipeline to run
+  push:
+    branches: [main]  # runs when you git push to main
+  pull_request:
+    branches: [main]  # runs when you open a PR targeting main
+
+jobs:
+
+  # test-frontend:  # job name, can be anything
+  #   runs-on: ubuntu-latest  # spins up a fresh Ubuntu machine in GitHub's cloud
+
+  #   steps:
+  #     - uses: actions/checkout@v3  # downloads your repo code onto that machine
+
+  #     - uses: actions/setup-node@v3  # installs Node.js on that machine
+  #       with:
+  #         node-version: '24'  # which Node version to use, match your local version
+
+  #     - name: Install frontend dependencies
+  #       run: npm ci  # like npm install but stricter and faster, uses package-lock.json exactly
+  #       working-directory: ./frontend  # same as typing "cd frontend" before running the command
+
+  #     - name: Build frontend
+  #       run: npm run build  # compiles your React/frontend code into plain HTML/CSS/JS for deployment
+  #       working-directory: ./frontend  # again, run this inside the frontend folder
+
+  test-backend:  # separate job, runs in parallel with test-frontend
+    runs-on: ubuntu-latest  # another fresh Ubuntu machine, independent from the frontend one
+
+    steps:
+      - uses: actions/checkout@v3  # re-download repo code (each job is a separate machine)
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '24'
+      
+      # - name: Run lint check # checks for code errors/bad practices
+      #   run: npm run lint
+      #   working-directory: ./server
+
+      - name: Install backend dependencies
+        run: npm ci  # install backend's own package.json dependencies
+        working-directory: ./server  # cd into backend folder
+
+      - name: Run backend tests
+        run: npm test  # runs whatever is in your "test" script in backend/package.json
+        working-directory: ./server  # run inside backend folder
+
+  # deploy:
+  #   needs: [test-frontend, test-backend]  # waits for BOTH jobs above to pass before running
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'  # only deploy if the push was to main, not other branches
+
+  #   steps:
+  #     - uses: actions/checkout@v3  # download code again (fresh machine, so need this every job)
+
+  #     - name: Deploy
+  #       run: npx vercel --token=${{ secrets.VERCEL_TOKEN }} --prod
