@@ -49,5 +49,7 @@ const BASE_URL = "http://localhost:3000/api/auth";
     console.error(error.response?.data || error.message);
   }
 
+  console.log("API Test Successful!");
+
   console.log("=== API Client Test Completed ===");
 })();
