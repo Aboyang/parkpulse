@@ -1,6 +1,6 @@
 import { vi, describe, test, expect, beforeEach } from "vitest";
 import axios from "axios";
-import CarparkAvailabilityService from "../services/CarparkService.js";
+import CarparkAvailabilityService from "../services/carparkService.js";
 
 // 1. Tell Vitest to mock the axios module
 vi.mock("axios");
