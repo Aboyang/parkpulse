@@ -35,14 +35,14 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '24'
-      
-      # - name: Run lint check # checks for code errors/bad practices
-      #   run: npm run lint
-      #   working-directory: ./server
 
-      - name: Install backend dependencies
-        run: npm ci  # install backend's own package.json dependencies
+      - name: Install backend dependencies # install backend's own package.json dependencies
+        run: npm ci  
         working-directory: ./server  # cd into backend folder
+      
+      - name: Run lint check # checks for code errors/bad practices
+        run: npm run lint
+        working-directory: ./server
 
       - name: Run backend tests
         run: npm test  # runs whatever is in your "test" script in backend/package.json
