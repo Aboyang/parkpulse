@@ -1,5 +1,7 @@
 import { Location } from "../models/location.js";
 
+const pako = null;
+
 class LocationService {
   async getCurrentLocation() {
     try {
