@@ -2,6 +2,9 @@
 .env
 *.env
 
+# Claude
+CLAUDE.md
+
 # Node.js dependencies
 server/node_modules/
 frontend/node_modules/

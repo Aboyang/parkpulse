@@ -1,15 +1,14 @@
 import { CognitoIdentityProviderClient, SignUpCommand, ConfirmSignUpCommand, InitiateAuthCommand, GlobalSignOutCommand } from "@aws-sdk/client-cognito-identity-provider";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import crypto, { randomUUID } from "crypto";
 import dotenv from "dotenv";
 import path from "path";
 import { User } from "../models/user.js";
+import { dynamoAdapter } from "../db/index.js";
 
 dotenv.config({ path: path.resolve("../../.env") });
 
 export class AuthService {
-  constructor() {
+  constructor(adapter = dynamoAdapter) {
     this.region = "ap-southeast-1";
     this.userPoolId = process.env.USER_POOL_ID;
     this.appClientId = process.env.APP_CLIENT_ID;
@@ -17,8 +16,7 @@ export class AuthService {
     this.usersTable = "users";
 
     this.cognitoClient = new CognitoIdentityProviderClient({ region: this.region });
-    const ddbClient = new DynamoDBClient({ region: this.region });
-    this.docClient = DynamoDBDocumentClient.from(ddbClient);
+    this.db = adapter;
   }
 
   getSecretHash(username) {
@@ -45,15 +43,9 @@ export class AuthService {
 
     const result = await this.cognitoClient.send(command);
 
-    // Build User entity from Cognito result
     const user = new User({ userId: result.UserSub, email, name });
 
-    await this.docClient.send(
-      new PutCommand({
-        TableName: this.usersTable,
-        Item: user.toDB(),         // entity handles its own DB shape
-      })
-    );
+    await this.db.put(this.usersTable, user.toDB());
 
     return user.toJSON();
   }
@@ -94,12 +86,9 @@ export class AuthService {
     );
     const userId = payload.sub;
 
-    const data = await this.docClient.send(
-      new GetCommand({ TableName: this.usersTable, Key: { userId } })
-    );
+    const item = await this.db.get(this.usersTable, { userId });
 
-    // Rehydrate User entity from DynamoDB row
-    const user = User.fromDB(data.Item);
+    const user = User.fromDB(item);
 
     console.log("login success:", { userId, email, name: user.name });
 
@@ -112,14 +101,11 @@ export class AuthService {
   }
 
   async getUserProfile(userId) {
-    const data = await this.docClient.send(
-      new GetCommand({ TableName: this.usersTable, Key: { userId } })
-    );
+    const item = await this.db.get(this.usersTable, { userId });
 
-    if (!data.Item) return null;
+    if (!item) return null;
 
-    // Return as entity, toJSON() strips internal fields if needed
-    return User.fromDB(data.Item).toJSON();
+    return User.fromDB(item).toJSON();
   }
 
   async logout(accessToken) {

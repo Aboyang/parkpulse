@@ -1,45 +1,32 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { CarparkRating } from "../models/carparkRating.js";
+import { dynamoAdapter } from "../db/index.js";
 
 class RateCarparkService {
-  constructor() {
-    const client = new DynamoDBClient({ region: "ap-southeast-1" });
-    this.db = DynamoDBDocumentClient.from(client);
+  constructor(adapter = dynamoAdapter) {
+    this.db = adapter;
     this.tableName = "rating";
   }
 
   async rateCarpark(carparkId, userId, rating, comment) {
-    const current = await this.db.send(new GetCommand({
-      TableName: this.tableName,
-      Key: { carparkId },
-    }));
+    const current = await this.db.get(this.tableName, { carparkId });
 
-    // Rehydrate or create fresh entity
-    const carparkRating = current.Item
-      ? CarparkRating.fromDB(current.Item)
+    const carparkRating = current
+      ? CarparkRating.fromDB(current)
       : CarparkRating.empty(carparkId);
 
-    // Business logic now lives on the entity
     carparkRating.addRating(userId, rating, comment);
 
-    await this.db.send(new PutCommand({
-      TableName: this.tableName,
-      Item: carparkRating.toDB(),
-    }));
+    await this.db.put(this.tableName, carparkRating.toDB());
 
     return carparkRating.toJSON();
   }
 
   async getCarparkRating(carparkId) {
-    const result = await this.db.send(new GetCommand({
-      TableName: this.tableName,
-      Key: { carparkId },
-    }));
+    const item = await this.db.get(this.tableName, { carparkId });
 
-    if (!result.Item) return CarparkRating.empty(carparkId).toJSON();
+    if (!item) return CarparkRating.empty(carparkId).toJSON();
 
-    return CarparkRating.fromDB(result.Item).toJSON();
+    return CarparkRating.fromDB(item).toJSON();
   }
 }
 

@@ -1,24 +1,6 @@
 import { vi, describe, test, expect, beforeEach } from "vitest";
 import FavoriteCarparkService from "../services/favoriteCarparkService.js";
 
-// Mock AWS SDK
-vi.mock("@aws-sdk/client-dynamodb", () => ({
-  DynamoDBClient: vi.fn().mockImplementation(function() {
-    return {};
-  }),
-}));
-
-vi.mock("@aws-sdk/lib-dynamodb", () => ({
-  DynamoDBDocumentClient: {
-    from: vi.fn().mockReturnValue({ send: vi.fn() }),
-  },
-  PutCommand: vi.fn(),
-  QueryCommand: vi.fn(),
-  DeleteCommand: vi.fn(),
-  GetCommand: vi.fn(),
-}));
-
-// Mock carparkDB
 vi.mock("../utils/carparkDB.js", () => ({
   carparkDB: [
     {
@@ -32,55 +14,65 @@ vi.mock("../utils/carparkDB.js", () => ({
 
 describe("FavoriteCarparkService", () => {
   let service;
-  let mockSend;
+  let adapter;
 
   beforeEach(() => {
-    service = new FavoriteCarparkService();
-    mockSend = vi.fn();
-    service.db = { send: mockSend };
-    vi.clearAllMocks();
+    adapter = {
+      put: vi.fn(),
+      get: vi.fn(),
+      query: vi.fn(),
+      delete: vi.fn(),
+    };
+    service = new FavoriteCarparkService(adapter);
   });
 
   test("addFavorite saves and returns the favorite item", async () => {
-    mockSend.mockResolvedValue({});
+    adapter.put.mockResolvedValue(undefined);
 
     const result = await service.addFavorite("user123", "CP1");
 
-    expect(mockSend).toHaveBeenCalledOnce();
+    expect(adapter.put).toHaveBeenCalledOnce();
+    expect(adapter.put).toHaveBeenCalledWith(
+      "favorites",
+      expect.objectContaining({ userId: "user123", carparkId: "CP1" })
+    );
     expect(result).toMatchObject({ userId: "user123", carparkId: "CP1" });
   });
 
   test("getFavorites returns enriched carpark data for a user", async () => {
-    mockSend.mockResolvedValue({
-      Items: [{ userId: "user123", carparkId: "CP1" }],
-    });
+    adapter.query.mockResolvedValue([{ userId: "user123", carparkId: "CP1" }]);
 
     const result = await service.getFavorites("user123");
 
-    expect(mockSend).toHaveBeenCalledOnce();
+    expect(adapter.query).toHaveBeenCalledOnce();
+    expect(adapter.query).toHaveBeenCalledWith("favorites", { userId: "user123" });
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({ carparkId: "CP1" });
   });
 
   test("getFavorites returns empty array when user has no favorites", async () => {
-    mockSend.mockResolvedValue({ Items: [] });
+    adapter.query.mockResolvedValue([]);
 
     const result = await service.getFavorites("user123");
 
     expect(result).toEqual([]);
   });
 
-  test("removeFavorite calls DeleteCommand and returns true", async () => {
-    mockSend.mockResolvedValue({});
+  test("removeFavorite calls adapter.delete and returns true", async () => {
+    adapter.delete.mockResolvedValue(undefined);
 
     const result = await service.removeFavorite("user123", "CP1");
 
-    expect(mockSend).toHaveBeenCalledOnce();
+    expect(adapter.delete).toHaveBeenCalledOnce();
+    expect(adapter.delete).toHaveBeenCalledWith("favorites", {
+      userId: "user123",
+      carparkId: "CP1",
+    });
     expect(result).toBe(true);
   });
 
   test("isFavorite returns true when item exists", async () => {
-    mockSend.mockResolvedValue({ Item: { userId: "user123", carparkId: "CP1" } });
+    adapter.get.mockResolvedValue({ userId: "user123", carparkId: "CP1" });
 
     const result = await service.isFavorite("user123", "CP1");
 
@@ -88,7 +80,7 @@ describe("FavoriteCarparkService", () => {
   });
 
   test("isFavorite returns false when item does not exist", async () => {
-    mockSend.mockResolvedValue({});
+    adapter.get.mockResolvedValue(null);
 
     const result = await service.isFavorite("user123", "CP1");
 
