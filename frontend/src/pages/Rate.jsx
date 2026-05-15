@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/config';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { motion } from 'framer-motion';
@@ -35,7 +36,7 @@ export default function Rate() {
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error('User not logged in');
-      await axios.post('http://localhost:3000/api/rating', {
+      await axios.post(`${API_BASE_URL}/api/rating`, {
         carparkId,
         userId,
         rating,

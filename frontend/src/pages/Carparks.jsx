@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CarparkCard from '../components/carpark/CarparkCard';
 import MiniMap from '../components/carpark/MiniMap';
 import FilterPanel from '../components/carpark/FilterPanel';
-import { DEFAULT_CENTER } from '@/lib/config';
+import { DEFAULT_CENTER, API_BASE_URL } from '@/lib/config';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -75,7 +75,7 @@ export default function Carparks() {
         if (filterRadius) params.radius      = filterRadius;
         if (evCharge)     params.ev_charging = true;
 
-        const res      = await axios.get('http://localhost:3000/api/carparks', { params });
+        const res      = await axios.get(`${API_BASE_URL}/api/carparks`, { params });
         const carparks = res.data.carparks || [];
         console.log(carparks)
 

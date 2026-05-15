@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import SearchBar from '../components/carpark/SearchBar';
 import PreferenceToggle from '../components/carpark/PreferenceToggle';
 import RadiusSlider from '../components/carpark/RadiusSlider';
-import { APP_NAME, APP_TAGLINE, DEFAULT_SEARCH_RADIUS_M } from '@/lib/config';
+import { APP_NAME, APP_TAGLINE, DEFAULT_SEARCH_RADIUS_M, API_BASE_URL } from '@/lib/config';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -56,7 +56,7 @@ export default function Home() {
     const accessToken = localStorage.getItem('token');
     try {
       if (accessToken) {
-        const res = await fetch('http://localhost:3000/api/auth/logout', {
+        const res = await fetch(`${API_BASE_URL}/api/auth/logout`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ accessToken }),

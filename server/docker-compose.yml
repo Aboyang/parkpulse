@@ -1,0 +1,30 @@
+services:
+  server:
+    build: .
+    expose:
+      - "3000"
+    env_file:
+      - ../.env
+    environment:
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: http://localhost:5173
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./config/nginx.docker.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - server
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5

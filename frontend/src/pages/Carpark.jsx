@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API_BASE_URL } from '@/lib/config';
 import { useTheme } from 'next-themes';
 import { ArrowLeft, Star, Car, Clock, DollarSign, Zap, Shield, Smartphone, Navigation, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -58,7 +59,7 @@ export default function Carpark() {
 
     try {
       setIsSaving(true);
-      const response = await fetch('http://localhost:3000/api/favorites', {
+      const response = await fetch(`${API_BASE_URL}/api/favorites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, carparkId: carpark.id }),
