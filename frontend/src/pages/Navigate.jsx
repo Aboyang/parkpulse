@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API_BASE_URL } from '@/lib/config';
 import { useTheme } from 'next-themes';
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
 import {
@@ -48,7 +49,7 @@ function getBrowserPosition() {
 }
 
 async function fetchRoute(start, end) {
-  const res = await fetch('http://localhost:3000/api/navigate/route', {
+  const res = await fetch(`${API_BASE_URL}/api/navigate/route`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ start, end }),

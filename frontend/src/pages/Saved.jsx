@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '@/lib/config';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bookmark, Trash2, Navigation } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +16,7 @@ export default function Saved() {
     queryKey: ['saved-carparks', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const res = await fetch(`http://localhost:3000/api/favorites/${userId}`);
+      const res = await fetch(`${API_BASE_URL}/api/favorites/${userId}`);
       if (!res.ok) throw new Error('Failed to fetch saved carparks');
       return res.json();
     },
@@ -29,7 +30,7 @@ export default function Saved() {
       const results = await Promise.all(
         saved.map(async (item) => {
           try {
-            const res = await fetch(`http://localhost:3000/api/carparks/${item.carparkId}`);
+            const res = await fetch(`${API_BASE_URL}/api/carparks/${item.carparkId}`);
             if (!res.ok) throw new Error('Failed');
             const data = await res.json();
             return [item.carparkId, data?.availability?.lots_available ?? 'No data'];
@@ -50,7 +51,7 @@ export default function Saved() {
       const results = await Promise.all(
         saved.map(async (item) => {
           try {
-            const res = await fetch(`http://localhost:3000/api/rating/${item.carparkId}`);
+            const res = await fetch(`${API_BASE_URL}/api/rating/${item.carparkId}`);
             if (!res.ok) throw new Error('Failed to fetch rating');
             const json = await res.json();
             // Return only the `data` field
@@ -72,7 +73,7 @@ export default function Saved() {
   // Delete saved carpark
   const deleteMutation = useMutation({
     mutationFn: async (carparkId) => {
-      const res = await fetch(`http://localhost:3000/api/favorites`, {
+      const res = await fetch(`${API_BASE_URL}/api/favorites`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, carparkId }),
