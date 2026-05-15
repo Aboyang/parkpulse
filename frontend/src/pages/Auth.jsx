@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Navigation, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { APP_NAME, APP_TAGLINE } from '@/lib/config';
+import { APP_NAME, APP_TAGLINE, API_BASE_URL } from '@/lib/config';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -53,8 +53,8 @@ export default function Auth() {
 
     try {
       const endpoint = isSignup
-        ? 'http://localhost:3000/api/auth/signup'
-        : 'http://localhost:3000/api/auth/login';
+        ? `${API_BASE_URL}/api/auth/signup`
+        : `${API_BASE_URL}/api/auth/login`;
 
       const body = isSignup
         ? { email, password, name }

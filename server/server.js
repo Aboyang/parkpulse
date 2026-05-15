@@ -20,7 +20,7 @@ app.use(portLogger);
 
 // Allow requests from frontend on port 5173
 app.use(cors({
-  origin: "http://localhost:5173"
+  origin: process.env.CORS_ORIGIN?.split(',') ?? "http://localhost:5173"
 }));
 
 // Mount routers

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '@/lib/config';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -19,7 +20,7 @@ export default function SavePrompt() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!userId || !carparkId) throw new Error('Missing userId or carparkId');
-      const res = await fetch('http://localhost:3000/api/favorites', {
+      const res = await fetch(`${API_BASE_URL}/api/favorites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, carparkId }),
