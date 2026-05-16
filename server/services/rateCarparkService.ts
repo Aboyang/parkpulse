@@ -15,7 +15,7 @@ class RateCarparkService {
     carparkId: string,
     userId: string,
     rating: number,
-    comment: string
+    comment?: string
   ): Promise<ReturnType<CarparkRating["toJSON"]>> {
     const existingRating = await this.db.get(this.tableName, { carparkId });
 
