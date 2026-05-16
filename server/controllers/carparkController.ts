@@ -1,23 +1,24 @@
 import type { Request, Response } from "express";
-import CarparkAvailabilityService, { DEFAULT_SEARCH_RADIUS_METRES } from "../services/carparkService.js";
+import CarparkAvailabilityService from "../services/carparkService.js";
 import { getCache, setCache } from "../config/redis.js";
 import type { EnrichedCarpark } from "../types/carpark.js";
+import { validateGetCarparksQuery, validateGetCarparkByIdParam } from "../validators/carparkValidator.js";
 
 const service = new CarparkAvailabilityService();
 
 export async function getCarparks(req: Request, res: Response): Promise<void> {
     try {
-        const { address, radius, ev_charging } = req.query;
-
-        console.log(">>> Fetching nearby carparks with params:", { address, radius, ev_charging });
-
-        if (!address) {
-            res.status(400).json({ error: "Address is required" });
+        const result = validateGetCarparksQuery(req.query as Record<string, unknown>);
+        if (!result.ok) {
+            res.status(400).json({ error: result.error });
             return;
         }
 
-        const parsedRadius = radius ? parseInt(radius as string) : DEFAULT_SEARCH_RADIUS_METRES;
-        const cacheKey = `carparks:${address}:${parsedRadius}:${ev_charging || "any"}`;
+        const { address, radius, evCharging } = result.data;
+
+        console.log(">>> Fetching nearby carparks with params:", { address, radius, evCharging });
+
+        const cacheKey = `carparks:${address}:${radius}:${evCharging ? "true" : "any"}`;
 
         const cachedData = await getCache(cacheKey) as EnrichedCarpark[] | null;
         if (cachedData) {
@@ -27,7 +28,7 @@ export async function getCarparks(req: Request, res: Response): Promise<void> {
         }
 
         console.log(">>> Cache miss");
-        const carparks = await service.findCarparks(address as string, parsedRadius, ev_charging === "true");
+        const carparks = await service.findCarparks(address, radius, evCharging);
         await setCache(cacheKey, carparks);
 
         res.json({ carparks, source: "api" });
@@ -39,8 +40,13 @@ export async function getCarparks(req: Request, res: Response): Promise<void> {
 
 export async function getCarparkById(req: Request, res: Response): Promise<void> {
     try {
-        const id = req.params['id'] as string;
-        const availability = await service.fetchCarparkAvailabilityById(id);
+        const result = validateGetCarparkByIdParam(req.params['id']);
+        if (!result.ok) {
+            res.status(400).json({ error: result.error });
+            return;
+        }
+
+        const availability = await service.fetchCarparkAvailabilityById(result.data);
 
         if (!availability) {
             res.status(404).json({ error: "Carpark not found" });

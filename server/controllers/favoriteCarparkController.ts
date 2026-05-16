@@ -1,19 +1,20 @@
 import type { Request, Response } from "express";
 import FavoriteCarparkService from "../services/favoriteCarparkService.js";
+import { validateFavoriteBody, validateUserIdParam, validateFavoriteParams } from "../validators/favoriteCarparkValidator.js";
 
 const favoriteCarparkService = new FavoriteCarparkService();
 
 export async function addFavorite(req: Request, res: Response): Promise<void> {
+    const result = validateFavoriteBody(req.body as Record<string, unknown>);
+    if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+    }
+
     try {
-        const { userId, carparkId } = req.body;
-
-        if (!userId || !carparkId) {
-            res.status(400).json({ error: "userId and carparkId are required" });
-            return;
-        }
-
-        const result = await favoriteCarparkService.addFavorite(userId, carparkId);
-        res.json(result);
+        const { userId, carparkId } = result.data;
+        const response = await favoriteCarparkService.addFavorite(userId, carparkId);
+        res.json(response);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to add favorite" });
@@ -21,10 +22,15 @@ export async function addFavorite(req: Request, res: Response): Promise<void> {
 }
 
 export async function getFavorites(req: Request, res: Response): Promise<void> {
+    const result = validateUserIdParam(req.params['userId']);
+    if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+    }
+
     try {
-        const userId = req.params['userId'] as string;
-        const result = await favoriteCarparkService.getFavorites(userId);
-        res.json(result);
+        const response = await favoriteCarparkService.getFavorites(result.data);
+        res.json(response);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to get favorites" });
@@ -32,14 +38,14 @@ export async function getFavorites(req: Request, res: Response): Promise<void> {
 }
 
 export async function removeFavorite(req: Request, res: Response): Promise<void> {
+    const result = validateFavoriteBody(req.body as Record<string, unknown>);
+    if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+    }
+
     try {
-        const { userId, carparkId } = req.body;
-
-        if (!userId || !carparkId) {
-            res.status(400).json({ error: "userId and carparkId are required" });
-            return;
-        }
-
+        const { userId, carparkId } = result.data;
         await favoriteCarparkService.removeFavorite(userId, carparkId);
         res.json({ success: true });
     } catch (err) {
@@ -49,11 +55,16 @@ export async function removeFavorite(req: Request, res: Response): Promise<void>
 }
 
 export async function isFavorite(req: Request, res: Response): Promise<void> {
+    const result = validateFavoriteParams(req.params['userId'], req.params['carparkId']);
+    if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+    }
+
     try {
-        const userId = req.params['userId'] as string;
-        const carparkId = req.params['carparkId'] as string;
-        const result = await favoriteCarparkService.isFavorite(userId, carparkId);
-        res.json({ isFavorite: result });
+        const { userId, carparkId } = result.data;
+        const isFav = await favoriteCarparkService.isFavorite(userId, carparkId);
+        res.json({ isFavorite: isFav });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to check favorite" });
