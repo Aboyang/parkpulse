@@ -5,7 +5,6 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-d
 import { ThemeProvider } from "next-themes";
 
 import PageNotFound from "./lib/PageNotFound";
-import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 
 // Pages
 import Auth from "./pages/Auth";
@@ -18,52 +17,12 @@ import SavePrompt from "./pages/SavePrompt";
 import ThankYou from "./pages/ThankYou";
 import Saved from "./pages/Saved";
 
-// ---------------------
-// Protected App
-// ---------------------
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
+function ProtectedRoute({ children }) {
+  const userId = localStorage.getItem('userId');
+  if (!userId) return <Navigate to="/Auth" replace />;
+  return children;
+}
 
-  // Loading spinner
-  if (isLoadingAuth || isLoadingPublicSettings) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  // Handle authentication errors
-  if (authError?.type === "auth_required") {
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (authError?.type === "user_not_registered") {
-    return <UserNotRegisteredError />;
-  }
-
-  // Protected routes
-  return (
-    <Routes>
-      {/* Default "/" goes to Home */}
-      <Route path="/" element={<Navigate to="/Home" replace />} />
-
-      <Route path="/Home" element={<Home />} />
-      <Route path="/Carparks" element={<Carparks />} />
-      <Route path="/Carpark" element={<Carparks />} />
-      <Route path="/Navigate" element={<NavigatePage />} />
-      <Route path="/Rate" element={<Rate />} />
-      <Route path="/SavePrompt" element={<SavePrompt />} />
-      <Route path="/ThankYou" element={<ThankYou />} />
-      <Route path="/Saved" element={<Saved />} />
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
-  );
-};
-
-// ---------------------
-// Main App
-// ---------------------
 export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
@@ -71,15 +30,15 @@ export default function App() {
         <Router>
           <Routes>
             <Route path="/Auth" element={<Auth />} />
-            <Route path="/Home" element={<Home />} />
-            <Route path="/Carparks" element={<Carparks />} />
-            <Route path="/Carpark" element={<Carpark />} />
-            <Route path="/Navigate" element={<NavigatePage />} />
-            <Route path="/Rate" element={<Rate />} />
-            <Route path="/SavePrompt" element={<SavePrompt />} />
-            <Route path="/ThankYou" element={<ThankYou />} />
-            <Route path="/Saved" element={<Saved />} />
             <Route path="/" element={<Navigate to="/Home" replace />} />
+            <Route path="/Home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/Carparks" element={<ProtectedRoute><Carparks /></ProtectedRoute>} />
+            <Route path="/Carpark" element={<ProtectedRoute><Carpark /></ProtectedRoute>} />
+            <Route path="/Navigate" element={<ProtectedRoute><NavigatePage /></ProtectedRoute>} />
+            <Route path="/Rate" element={<ProtectedRoute><Rate /></ProtectedRoute>} />
+            <Route path="/SavePrompt" element={<ProtectedRoute><SavePrompt /></ProtectedRoute>} />
+            <Route path="/ThankYou" element={<ProtectedRoute><ThankYou /></ProtectedRoute>} />
+            <Route path="/Saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
         </Router>

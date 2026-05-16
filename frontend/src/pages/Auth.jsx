@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Navigation, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { APP_NAME, APP_TAGLINE, API_BASE_URL } from '@/lib/config';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Auth() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [isSignup, setIsSignup] = useState(false);
 
@@ -52,35 +54,18 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      const endpoint = isSignup
-        ? `${API_BASE_URL}/api/auth/signup`
-        : `${API_BASE_URL}/api/auth/login`;
-
-      const body = isSignup
-        ? { email, password, name }
-        : { email, password };
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Something went wrong');
-      }
-
       if (isSignup) {
-        // ✅ signup success
+        const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Something went wrong');
         setIsSignup(false);
         setSuccess('Account created successfully. Please log in.');
       } else {
-        // login success
-        localStorage.setItem('token', data.accessToken);
-        localStorage.setItem('userId', data.userId);
-        localStorage.setItem('name', JSON.stringify(data.name));
+        await login(email, password);
         navigate('/Home');
       }
     } catch (err) {

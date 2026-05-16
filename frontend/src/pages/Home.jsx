@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,8 @@ import { motion } from 'framer-motion';
 import SearchBar from '../components/carpark/SearchBar';
 import PreferenceToggle from '../components/carpark/PreferenceToggle';
 import RadiusSlider from '../components/carpark/RadiusSlider';
-import { APP_NAME, APP_TAGLINE, DEFAULT_SEARCH_RADIUS_M, API_BASE_URL } from '@/lib/config';
+import { APP_NAME, APP_TAGLINE, DEFAULT_SEARCH_RADIUS_M } from '@/lib/config';
+import { useAuth } from '@/hooks/useAuth';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -27,17 +28,12 @@ function buildResultsParams({ destination, coords, evCharging, radius }) {
 export default function Home() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { logout } = useAuth();
 
   const [destination,    setDestination]    = useState('');
   const [selectedCoords, setSelectedCoords] = useState(null);
   const [evCharging,     setEvCharging]     = useState(false);
   const [radius,         setRadius]         = useState(DEFAULT_SEARCH_RADIUS_M);
-
-  // Auth guard on mount
-  useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (!userId) navigate('/Auth');
-  }, [navigate]);
 
   const handleSearch = () => {
     if (!destination.trim()) return;
@@ -53,27 +49,8 @@ export default function Home() {
   };
 
   const handleLogout = async () => {
-    const accessToken = localStorage.getItem('token');
-    try {
-      if (accessToken) {
-        const res = await fetch(`${API_BASE_URL}/api/auth/logout`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ accessToken }),
-        });
-        if (!res.ok) {
-          const data = await res.json();
-          console.error('Logout API error:', data.error || 'Unknown error');
-        }
-        navigate('/Auth');
-      }
-    } catch (err) {
-      console.error('Logout request failed:', err);
-    } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('name');
-      localStorage.removeItem('userId');
-    }
+    await logout();
+    navigate('/Auth');
   };
 
   // ── render ────────────────────────────────────────────────────────────────
