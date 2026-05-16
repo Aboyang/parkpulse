@@ -1,0 +1,163 @@
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useTheme } from 'next-themes';
+import { ArrowLeft, Star, Car, Clock, DollarSign, Zap, Smartphone, Navigation, Heart } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { motion } from 'framer-motion';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { useSaveCarpark } from '@/hooks/use-favorites';
+import { StatBlock } from '@/components/carpark/stat-block';
+import { getTileUrl } from '@/utils/map';
+
+export default function Carpark() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { theme } = useTheme();
+
+  const carpark      = location.state?.carpark;
+  const saveMutation = useSaveCarpark();
+
+  if (!carpark) {
+    return (
+      <div className="min-h-screen bg-slate-900 dark:bg-blue-50 text-white dark:text-slate-800 flex items-center justify-center">
+        <p>Carpark not found</p>
+      </div>
+    );
+  }
+
+  const tileUrl = getTileUrl(theme);
+
+  const availPct = carpark.total_capacity > 0
+    ? (carpark.available_lots / carpark.total_capacity) * 100
+    : null;
+  const availColor = availPct === null
+    ? 'text-slate-400'
+    : availPct > 50 ? 'text-emerald-400' : availPct > 20 ? 'text-amber-400' : 'text-red-400';
+  const lotsLabel = carpark.total_capacity > 0
+    ? `${carpark.available_lots} / ${carpark.total_capacity}`
+    : `${carpark.available_lots} available`;
+
+  const features = [
+    { label: 'EV Charging', enabled: carpark.ev_charging, icon: Zap, color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+    { label: 'Mobile Payment', enabled: carpark.mobile_payment, icon: Smartphone, color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+    { label: 'Free Parking', enabled: carpark.free_parking, icon: DollarSign, color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+  ];
+
+  const handleSaveCarpark = () => {
+    const userId = localStorage.getItem('userId');
+    if (saveMutation.isSuccess) return;
+    if (!userId) {
+      navigate('/Auth');
+      return;
+    }
+    saveMutation.mutate({ userId, carparkId: carpark.id });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 dark:from-blue-50 dark:to-slate-50 text-white dark:text-slate-800">
+      {/* Map header */}
+      <div className="relative h-56">
+        <MapContainer
+          center={[carpark.latitude, carpark.longitude]}
+          zoom={16}
+          style={{ height: '100%', width: '100%' }}
+          zoomControl={false}
+          attributionControl={false}
+          dragging={false}
+        >
+          <TileLayer url={tileUrl} />
+          <Marker position={[carpark.latitude, carpark.longitude]} />
+        </MapContainer>
+        <div className={`absolute inset-0 pointer-events-none ${theme === 'dark' ? 'bg-gradient-to-b from-slate-900/40 to-slate-900/80' : 'bg-gradient-to-b from-blue-50/40 to-blue-50/80'}`} />
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-12 left-4 z-[1000] p-2 bg-slate-900/80 dark:bg-white/80 backdrop-blur rounded-xl"
+        >
+          <ArrowLeft className="w-5 h-5 text-white dark:text-slate-800" />
+        </button>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="px-5 mt-20 relative z-10 pb-8 max-w-lg mx-auto"
+      >
+        <div className="bg-slate-800/80 dark:bg-white/90 backdrop-blur-xl border border-slate-700/50 dark:border-slate-200/50 rounded-2xl p-5 space-y-5">
+          {/* Title & Rating */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base font-bold leading-tight text-white dark:text-slate-900">{carpark.name}</h1>
+              <p className="text-xs text-slate-400 dark:text-slate-600 mt-0.5">{carpark.car_park_type}</p>
+            </div>
+            {carpark.average_rating != null ? (
+              <div className="flex items-center gap-1 bg-amber-500/20 px-2.5 py-1 rounded-lg shrink-0">
+                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                <span className="text-amber-300 font-semibold text-sm">{carpark.average_rating.toFixed(1)}</span>
+                <span className="text-slate-400 text-xs">({carpark.total_ratings})</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 bg-slate-700/50 dark:bg-slate-200/50 px-2.5 py-1 rounded-lg shrink-0">
+                <Star className="w-4 h-4 text-slate-500 dark:text-slate-600" />
+                <span className="text-slate-400 dark:text-slate-600 text-sm">No ratings</span>
+              </div>
+            )}
+          </div>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <StatBlock icon={Car} label="Available Lots" className={availColor}>
+              {lotsLabel}
+            </StatBlock>
+            <StatBlock icon={Clock} label="Operating Hours" className="text-white dark:text-slate-900">
+              {carpark.operating_hours}
+            </StatBlock>
+            <StatBlock icon={Smartphone} label="Parking System" className="text-slate-300 dark:text-slate-700">
+              {carpark.type_of_parking_system === 'ELECTRONIC PARKING' ? 'Electronic' : 'Coupon'}
+            </StatBlock>
+            <StatBlock icon={DollarSign} label="Short-Term" className={carpark.short_term_parking !== 'NO' ? 'text-emerald-400' : 'text-red-400'}>
+              {carpark.short_term_parking === 'NO' ? 'Not available' : carpark.short_term_parking || 'Available'}
+            </StatBlock>
+          </div>
+
+          {/* Features */}
+          {features.filter(f => f.enabled).length > 0 && (
+            <div>
+              <h3 className="text-xs font-medium text-slate-400 dark:text-slate-600 uppercase tracking-wider mb-2">Features</h3>
+              <div className="flex flex-wrap gap-2">
+                {features.filter(f => f.enabled).map((f) => (
+                  <Badge key={f.label} className={`${f.color} border text-xs py-1 px-2.5`}>
+                    <f.icon className="w-3 h-3 mr-1" />
+                    {f.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <Button
+              onClick={() => navigate(`/Navigate?id=${encodeURIComponent(carpark.id)}`, { state: { carpark } })}
+              className="w-full h-14 bg-teal-500 hover:bg-teal-600 text-white font-semibold text-base rounded-xl shadow-lg shadow-teal-500/25"
+            >
+              <Navigation className="w-5 h-5 mr-2" />
+              Confirm Selection
+            </Button>
+            <Button
+              onClick={handleSaveCarpark}
+              disabled={saveMutation.isPending}
+              className={`w-full h-14 font-semibold text-base rounded-xl transition-all ${
+                saveMutation.isSuccess
+                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                  : 'bg-slate-700/50 hover:bg-slate-700 dark:bg-slate-300/50 dark:hover:bg-slate-300 text-white dark:text-slate-900'
+              }`}
+            >
+              <Heart className={`w-5 h-5 mr-2 ${saveMutation.isSuccess ? 'fill-current' : ''}`} />
+              {saveMutation.isSuccess ? 'Saved!' : 'Save Carpark'}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
