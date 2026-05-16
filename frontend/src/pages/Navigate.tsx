@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from 'next-themes';
-import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
 import {
   Crosshair,
   VolumeX,
@@ -14,9 +14,11 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import L from 'leaflet';
-import { useRoute } from '@/hooks/use-navigate';
-import { type LucideIcon } from 'lucide-react';
-import type { LatLng, NavStep } from '@/types';
+import { useNavigationPolling } from '@/hooks/use-navigation-polling';
+import { getDistanceM } from '@/utils/geo';
+import { MapUpdater } from '@/components/map/MapUpdater';
+import { FloatingBtn } from '@/components/ui/floating-btn';
+import type { LatLng } from '@/types';
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -34,70 +36,24 @@ const destIcon = L.divIcon({
   iconAnchor: [10, 10],
 });
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getBrowserPosition(): Promise<LatLng | null> {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve(null);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve([pos.coords.latitude, pos.coords.longitude]),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  });
-}
-
-function getDistanceM(a: LatLng, b: LatLng): number {
-  const R  = 6371e3;
-  const p1 = (a[0] * Math.PI) / 180;
-  const p2 = (b[0] * Math.PI) / 180;
-  const dp = ((b[0] - a[0]) * Math.PI) / 180;
-  const dl = ((b[1] - a[1]) * Math.PI) / 180;
-  const x  = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-}
-
-interface MapUpdaterProps {
-  center: LatLng;
-}
-
-function MapUpdater({ center }: MapUpdaterProps) {
-  const map = useMap();
-  useEffect(() => {
-    if (center) map.setView(center, map.getZoom(), { animate: true, duration: 0.5 });
-  }, [center?.[0], center?.[1]]);
-  return null;
-}
-
 // ─── Component ───────────────────────────────────────────────────────────────
-
-const POLL_INTERVAL_MS = 3000;
 
 export default function Navigate() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { theme } = useTheme();
 
-  const [muted,          setMuted]          = useState(false);
-  const [arrived,        setArrived]        = useState(false);
-  const [userPos,        setUserPos]        = useState<LatLng | null>(null);
-  const [route,          setRoute]          = useState<LatLng[]>([]);
-  const [navSteps,       setNavSteps]       = useState<NavStep[]>([]);
-  const [locationStatus, setLocationStatus] = useState<'requesting' | 'denied' | 'granted'>('requesting');
+  const [muted,   setMuted]   = useState(false);
+  const [arrived, setArrived] = useState(false);
 
-  const pollRef            = useRef<ReturnType<typeof setInterval> | null>(null);
   const mutedRef           = useRef<boolean>(false);
-  const totalDistRef       = useRef<number>(0);
   const spokenStepIndexRef = useRef<number>(-1);
-  const stepsRef           = useRef<NavStep[]>([]);
 
   const carpark     = location.state?.carpark;
-  const destination = carpark ? [carpark.latitude, carpark.longitude] : null;
+  const destination = carpark ? [carpark.latitude, carpark.longitude] as [number, number] : null;
 
-  const routeMutation = useRoute();
+  const { locationStatus, userPos, route, navSteps, totalDistRef, stepsRef, handleRetry, stopPolling } =
+    useNavigationPolling(destination);
 
   useEffect(() => { mutedRef.current = muted; }, [muted]);
 
@@ -111,117 +67,6 @@ export default function Navigate() {
     window.speechSynthesis.speak(utt);
   }
 
-  // ── Init: get browser position → fetch route → start polling ──────────────
-
-  useEffect(() => {
-    if (!destination) return;
-
-    let cancelled = false;
-
-    const init = async () => {
-      setLocationStatus('requesting');
-
-      const pos = await getBrowserPosition();
-      if (cancelled) return;
-
-      if (!pos) {
-        setLocationStatus('denied');
-        return;
-      }
-
-      setLocationStatus('granted');
-
-      try {
-        const { pts, steps, totalDist } = await routeMutation.mutateAsync({ start: pos as [number, number], end: destination as [number, number] });
-        if (cancelled) return;
-
-        totalDistRef.current = totalDist;
-        stepsRef.current     = steps;
-        setRoute(pts);
-        setNavSteps(steps);
-        setUserPos(pos);
-      } catch {
-        setLocationStatus('denied');
-        return;
-      }
-
-      // Poll browser location + refresh route every 3s
-      pollRef.current = setInterval(async () => {
-        if (cancelled) return;
-
-        const updated = await getBrowserPosition();
-        if (cancelled || !updated) return;
-
-        setUserPos(updated);
-
-        try {
-          const { pts, steps, totalDist } = await routeMutation.mutateAsync({ start: updated as [number, number], end: destination as [number, number] });
-          if (cancelled) return;
-
-          totalDistRef.current = totalDist;
-          stepsRef.current     = steps;
-          setRoute(pts);
-          setNavSteps(steps);
-        } catch (err) {
-          console.error('Route refresh failed:', err);
-        }
-      }, POLL_INTERVAL_MS);
-    };
-
-    init();
-
-    return () => {
-      cancelled = true;
-      if (pollRef.current) clearInterval(pollRef.current);
-      window.speechSynthesis?.cancel();
-    };
-  }, [destination?.[0], destination?.[1]]);
-
-  // ── Retry ──────────────────────────────────────────────────────────────────
-
-  const handleRetry = async () => {
-    setLocationStatus('requesting');
-
-    const pos = await getBrowserPosition();
-    if (!pos) {
-      setLocationStatus('denied');
-      return;
-    }
-
-    setLocationStatus('granted');
-
-    try {
-      const { pts, steps, totalDist } = await routeMutation.mutateAsync({ start: pos as [number, number], end: destination as [number, number] });
-      totalDistRef.current = totalDist;
-      stepsRef.current     = steps;
-      setRoute(pts);
-      setNavSteps(steps);
-      setUserPos(pos);
-    } catch {
-      setLocationStatus('denied');
-      return;
-    }
-
-    if (pollRef.current) clearInterval(pollRef.current);
-
-    pollRef.current = setInterval(async () => {
-      const updated = await getBrowserPosition();
-      if (!updated) return;
-
-      setUserPos(updated);
-
-      try {
-        const { pts, steps, totalDist } = await routeMutation.mutateAsync({ start: updated as [number, number], end: destination as [number, number] });
-        totalDistRef.current = totalDist;
-        stepsRef.current     = steps;
-        setRoute(pts);
-        setNavSteps(steps);
-      } catch (err) {
-        console.error('Route refresh failed:', err);
-      }
-    }, POLL_INTERVAL_MS);
-  };
-
   // ── Arrival check ──────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -232,7 +77,7 @@ export default function Navigate() {
   useEffect(() => {
     if (arrived) {
       speak('You have arrived at your destination');
-      if (pollRef.current) clearInterval(pollRef.current);
+      stopPolling();
     }
   }, [arrived]);
 
@@ -502,24 +347,5 @@ export default function Navigate() {
       )}
 
     </div>
-  );
-}
-
-// ─── Floating button ──────────────────────────────────────────────────────────
-
-interface FloatingBtnProps {
-  icon: LucideIcon;
-  onClick: () => void;
-  className?: string;
-}
-
-function FloatingBtn({ icon: Icon, onClick, className = '' }: FloatingBtnProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-11 h-11 rounded-full bg-slate-800/80 dark:bg-white/80 backdrop-blur border border-slate-700/50 dark:border-slate-200/50 flex items-center justify-center hover:bg-slate-700/80 dark:hover:bg-slate-100/80 transition-colors ${className}`}
-    >
-      <Icon className="w-5 h-5 text-slate-200 dark:text-slate-700" />
-    </button>
   );
 }
