@@ -2,7 +2,12 @@ import React from 'react';
 import { Slider } from '@/components/ui/slider';
 import { MapPin } from 'lucide-react';
 
-export default function RadiusSlider({ value, onChange }) {
+interface RadiusSliderProps {
+  value: number;
+  onChange: (value: number) => void;
+}
+
+export default function RadiusSlider({ value, onChange }: RadiusSliderProps) {
   const displayValue = value >= 1000 ? `${(value / 1000).toFixed(1)} km` : `${value} m`;
 
   return (

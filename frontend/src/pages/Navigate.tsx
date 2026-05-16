@@ -15,6 +15,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import L from 'leaflet';
 import { useRoute } from '@/hooks/use-navigate';
+import { type LucideIcon } from 'lucide-react';
+import type { LatLng, NavStep } from '@/types';
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -34,7 +36,7 @@ const destIcon = L.divIcon({
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getBrowserPosition() {
+function getBrowserPosition(): Promise<LatLng | null> {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
       resolve(null);
@@ -48,7 +50,7 @@ function getBrowserPosition() {
   });
 }
 
-function getDistanceM(a, b) {
+function getDistanceM(a: LatLng, b: LatLng): number {
   const R  = 6371e3;
   const p1 = (a[0] * Math.PI) / 180;
   const p2 = (b[0] * Math.PI) / 180;
@@ -58,7 +60,11 @@ function getDistanceM(a, b) {
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
-function MapUpdater({ center }) {
+interface MapUpdaterProps {
+  center: LatLng;
+}
+
+function MapUpdater({ center }: MapUpdaterProps) {
   const map = useMap();
   useEffect(() => {
     if (center) map.setView(center, map.getZoom(), { animate: true, duration: 0.5 });
@@ -77,16 +83,16 @@ export default function Navigate() {
 
   const [muted,          setMuted]          = useState(false);
   const [arrived,        setArrived]        = useState(false);
-  const [userPos,        setUserPos]        = useState(null);
-  const [route,          setRoute]          = useState([]);
-  const [navSteps,       setNavSteps]       = useState([]);
-  const [locationStatus, setLocationStatus] = useState('requesting');
+  const [userPos,        setUserPos]        = useState<LatLng | null>(null);
+  const [route,          setRoute]          = useState<LatLng[]>([]);
+  const [navSteps,       setNavSteps]       = useState<NavStep[]>([]);
+  const [locationStatus, setLocationStatus] = useState<'requesting' | 'denied' | 'granted'>('requesting');
 
-  const pollRef            = useRef(null);
-  const mutedRef           = useRef(false);
-  const totalDistRef       = useRef(0);
-  const spokenStepIndexRef = useRef(-1);
-  const stepsRef           = useRef([]);
+  const pollRef            = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mutedRef           = useRef<boolean>(false);
+  const totalDistRef       = useRef<number>(0);
+  const spokenStepIndexRef = useRef<number>(-1);
+  const stepsRef           = useRef<NavStep[]>([]);
 
   const carpark     = location.state?.carpark;
   const destination = carpark ? [carpark.latitude, carpark.longitude] : null;
@@ -95,7 +101,7 @@ export default function Navigate() {
 
   useEffect(() => { mutedRef.current = muted; }, [muted]);
 
-  function speak(text) {
+  function speak(text: string): void {
     if (mutedRef.current || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const utt   = new SpeechSynthesisUtterance(text);
@@ -220,7 +226,7 @@ export default function Navigate() {
 
   useEffect(() => {
     if (!userPos || !destination || arrived) return;
-    if (getDistanceM(userPos, destination) < 40) setArrived(true);
+    if (getDistanceM(userPos, destination as LatLng) < 40) setArrived(true);
   }, [userPos]);
 
   useEffect(() => {
@@ -501,7 +507,13 @@ export default function Navigate() {
 
 // ─── Floating button ──────────────────────────────────────────────────────────
 
-function FloatingBtn({ icon: Icon, onClick, className = '' }) {
+interface FloatingBtnProps {
+  icon: LucideIcon;
+  onClick: () => void;
+  className?: string;
+}
+
+function FloatingBtn({ icon: Icon, onClick, className = '' }: FloatingBtnProps) {
   return (
     <button
       onClick={onClick}

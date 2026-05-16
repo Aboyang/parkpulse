@@ -1,7 +1,13 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 
-export default function StarRating({ rating, onRate, size = 'lg' }) {
+interface StarRatingProps {
+  rating: number;
+  onRate?: (star: number) => void;
+  size?: 'lg' | 'md' | 'sm';
+}
+
+export default function StarRating({ rating, onRate, size = 'lg' }: StarRatingProps) {
   const sizeClass = size === 'lg' ? 'w-10 h-10' : size === 'md' ? 'w-6 h-6' : 'w-4 h-4';
 
   return (

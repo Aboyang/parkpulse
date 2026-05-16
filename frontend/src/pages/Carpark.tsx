@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from 'next-themes';
-import { ArrowLeft, Star, Car, Clock, DollarSign, Zap, Smartphone, Navigation, Heart } from 'lucide-react';
+import { ArrowLeft, Star, Car, Clock, DollarSign, Zap, Smartphone, Navigation, Heart, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
@@ -162,7 +162,14 @@ export default function Carpark() {
   );
 }
 
-function StatBlock({ icon: Icon, label, children, className }) {
+interface StatBlockProps {
+  icon: LucideIcon;
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}
+
+function StatBlock({ icon: Icon, label, children, className }: StatBlockProps) {
   return (
     <div className="bg-slate-700/30 dark:bg-slate-200/30 rounded-xl p-3">
       <div className="flex items-center gap-2 mb-1">

@@ -1,7 +1,15 @@
 import React from 'react';
 import { Switch } from '@/components/ui/switch';
+import { type LucideIcon } from 'lucide-react';
 
-export default function PreferenceToggle({ label, icon: Icon, checked, onCheckedChange }) {
+interface PreferenceToggleProps {
+  label: string;
+  icon: LucideIcon;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}
+
+export default function PreferenceToggle({ label, icon: Icon, checked, onCheckedChange }: PreferenceToggleProps) {
   return (
     <div className="flex items-center justify-between bg-slate-800/40 dark:bg-blue-100 rounded-xl px-4 py-3">
       <div className="flex items-center gap-3">

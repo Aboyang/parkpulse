@@ -7,16 +7,17 @@ import MiniMap from '../components/carpark/MiniMap';
 import FilterPanel from '../components/carpark/FilterPanel';
 import { DEFAULT_CENTER } from '@/lib/config';
 import { useCarparks } from '@/hooks/use-carparks';
+import type { LatLng } from '@/types';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-function formatDistance(meters) {
+function formatDistance(meters: number): string {
   return meters >= 1000
     ? `${(meters / 1000).toFixed(1)} km`
     : `${Math.round(meters)} m`;
 }
 
-const SORT_OPTIONS = [
+const SORT_OPTIONS: { key: 'distance' | 'availability'; label: string }[] = [
   { key: 'distance',     label: 'Distance'    },
   { key: 'availability', label: 'Availability' },
 ];
@@ -35,13 +36,13 @@ export default function Carparks() {
   const hasParamCoords = !isNaN(paramLat) && !isNaN(paramLng);
 
   // ── Local state ───────────────────────────────────────────────────────────
-  const [center,       setCenter]       = useState(null);
+  const [center,       setCenter]       = useState<LatLng | null>(null);
   const [geocoding,    setGeocoding]    = useState(true);
   const [showFilters,  setShowFilters]  = useState(false);
   const [erpFree,      setErpFree]      = useState(searchParams.get('erp') === 'true');
   const [evCharge,     setEvCharge]     = useState(searchParams.get('ev')  === 'true');
   const [filterRadius, setFilterRadius] = useState(parseInt(searchParams.get('radius')) || 3000);
-  const [sortBy,       setSortBy]       = useState('distance');
+  const [sortBy,       setSortBy]       = useState<'distance' | 'availability'>('distance');
 
   // ── Resolve map center ────────────────────────────────────────────────────
   useEffect(() => {

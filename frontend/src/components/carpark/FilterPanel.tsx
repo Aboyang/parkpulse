@@ -5,7 +5,18 @@ import PreferenceToggle from './PreferenceToggle';
 import RadiusSlider from './RadiusSlider';
 import { ShieldOff, Zap } from 'lucide-react';
 
-export default function FilterPanel({ erpFree, onErpChange, evCharging, onEvChange, radius, onRadiusChange, onClose, onApply }) {
+interface FilterPanelProps {
+  erpFree: boolean;
+  onErpChange: (value: boolean) => void;
+  evCharging: boolean;
+  onEvChange: (value: boolean) => void;
+  radius: number;
+  onRadiusChange: (value: number) => void;
+  onClose: () => void;
+  onApply: () => void;
+}
+
+export default function FilterPanel({ erpFree, onErpChange, evCharging, onEvChange, radius, onRadiusChange, onClose, onApply }: FilterPanelProps) {
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end">
       <div className="w-full bg-slate-900 rounded-t-3xl p-6 space-y-6 max-h-[80vh] overflow-y-auto">

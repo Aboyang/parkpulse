@@ -1,15 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import type { OneMapResult, SearchResult } from '@/types';
 
 const ONEMAP_SEARCH_URL = 'https://www.onemap.gov.sg/api/common/elastic/search';
 
+interface SearchBarProps {
+  value: string;
+  onChange: (value: string) => void;
+  onSelect?: (result: SearchResult | null) => void;
+  placeholder?: string;
+}
+
 // onSelect receives { label, lat, lng } when a suggestion is picked
-export default function SearchBar({ value, onChange, onSelect, placeholder }) {
-  const [suggestions, setSuggestions] = useState([]);
+export default function SearchBar({ value, onChange, onSelect, placeholder }: SearchBarProps) {
+  const [suggestions, setSuggestions] = useState<OneMapResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const debounceRef = useRef(null);
-  const containerRef = useRef(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -38,7 +46,7 @@ export default function SearchBar({ value, onChange, onSelect, placeholder }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleSelect = (result) => {
+  const handleSelect = (result: OneMapResult) => {
     const label = result.SEARCHVAL || result.ADDRESS || result.BUILDING;
     const lat = parseFloat(result.LATITUDE);
     const lng = parseFloat(result.LONGITUDE);

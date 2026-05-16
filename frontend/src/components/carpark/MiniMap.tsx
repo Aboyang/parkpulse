@@ -3,6 +3,7 @@ import { useTheme } from 'next-themes';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import type { Carpark, LatLng } from '@/types';
 
 // Fix default marker icon (leaflet's _getIconUrl is not in the TS typings)
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -27,7 +28,13 @@ const redIcon = new L.DivIcon({
   popupAnchor: [0, -42],
 });
 
-export default function MiniMap({ carparks, center, onMarkerClick }) {
+interface MiniMapProps {
+  carparks: Carpark[];
+  center: LatLng | null;
+  onMarkerClick?: (carpark: Carpark) => void;
+}
+
+export default function MiniMap({ carparks, center, onMarkerClick }: MiniMapProps) {
   const { theme } = useTheme();
   const tileUrl = theme === 'dark'
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'

@@ -1,8 +1,15 @@
 import React from 'react';
 import { Car, Star, Clock, Zap, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import type { Carpark } from '@/types';
 
-export default function CarparkCard({ carpark, distance, onClick }) {
+interface CarparkCardProps {
+  carpark: Carpark;
+  distance: string;
+  onClick: () => void;
+}
+
+export default function CarparkCard({ carpark, distance, onClick }: CarparkCardProps) {
   const availabilityPercent = (carpark.available_lots / carpark.total_capacity) * 100;
   const availabilityColor = availabilityPercent > 50 ? 'text-emerald-400' : availabilityPercent > 20 ? 'text-amber-400' : 'text-red-400';
 

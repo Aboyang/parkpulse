@@ -9,11 +9,17 @@ import PreferenceToggle from '../components/carpark/PreferenceToggle';
 import RadiusSlider from '../components/carpark/RadiusSlider';
 import { APP_NAME, APP_TAGLINE, DEFAULT_SEARCH_RADIUS_M } from '@/lib/config';
 import { useAuth } from '@/hooks/useAuth';
+import type { SearchResult } from '@/types';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 /** Build the search params object that Results.jsx expects. */
-function buildResultsParams({ destination, coords, evCharging, radius }) {
+function buildResultsParams({ destination, coords, evCharging, radius }: {
+  destination: string;
+  coords: SearchResult | null;
+  evCharging: boolean;
+  radius: number;
+}) {
   return new URLSearchParams({
     q:      destination.trim(),
     ev:     String(evCharging),
@@ -31,7 +37,7 @@ export default function Home() {
   const { logout } = useAuth();
 
   const [destination,    setDestination]    = useState('');
-  const [selectedCoords, setSelectedCoords] = useState(null);
+  const [selectedCoords, setSelectedCoords] = useState<SearchResult | null>(null);
   const [evCharging,     setEvCharging]     = useState(false);
   const [radius,         setRadius]         = useState(DEFAULT_SEARCH_RADIUS_M);
 
