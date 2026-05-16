@@ -9,27 +9,8 @@ import PreferenceToggle from '../components/carpark/PreferenceToggle';
 import RadiusSlider from '../components/carpark/RadiusSlider';
 import { APP_NAME, APP_TAGLINE, DEFAULT_SEARCH_RADIUS_M } from '@/lib/config';
 import { useAuth } from '@/hooks/useAuth';
+import { buildResultsParams } from '@/utils/search-params';
 import type { SearchResult } from '@/types';
-
-// ─── helpers ────────────────────────────────────────────────────────────────
-
-/** Build the search params object that Results.jsx expects. */
-function buildResultsParams({ destination, coords, evCharging, radius }: {
-  destination: string;
-  coords: SearchResult | null;
-  evCharging: boolean;
-  radius: number;
-}) {
-  return new URLSearchParams({
-    q:      destination.trim(),
-    ev:     String(evCharging),
-    radius: String(radius),
-    t:      String(Date.now()),
-    ...(coords ? { lat: String(coords.lat), lng: String(coords.lng) } : {}),
-  });
-}
-
-// ─── component ──────────────────────────────────────────────────────────────
 
 export default function Home() {
   const navigate = useNavigate();
@@ -43,14 +24,7 @@ export default function Home() {
 
   const handleSearch = () => {
     if (!destination.trim()) return;
-
-    const params = buildResultsParams({
-      destination,
-      coords: selectedCoords,
-      evCharging,
-      radius,
-    });
-
+    const params = buildResultsParams({ destination, coords: selectedCoords, evCharging, radius });
     navigate(`/Carparks?${params.toString()}`);
   };
 
@@ -58,8 +32,6 @@ export default function Home() {
     await logout();
     navigate('/Auth');
   };
-
-  // ── render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 dark:from-blue-50 dark:via-slate-50 dark:to-blue-50 text-white dark:text-slate-800">

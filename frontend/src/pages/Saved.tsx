@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bookmark, Trash2, Navigation } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useSavedCarparks, useDeleteSavedCarpark } from '@/hooks/use-favorites';
 import { useCarparkAvailabilities } from '@/hooks/use-carpark-availability';
 import { useCarparkRatings } from '@/hooks/use-rating';
@@ -34,9 +35,7 @@ export default function Saved() {
         </div>
 
         {savedQuery.isLoading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-4 border-slate-700 border-t-teal-400 rounded-full animate-spin" />
-          </div>
+          <LoadingSpinner />
         ) : saved.length === 0 ? (
           <div className="text-center py-20 space-y-4">
             <Bookmark className="w-12 h-12 text-slate-600 mx-auto" />

@@ -5,24 +5,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CarparkCard from '../components/carpark/CarparkCard';
 import MiniMap from '../components/carpark/MiniMap';
 import FilterPanel from '../components/carpark/FilterPanel';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DEFAULT_CENTER } from '@/lib/config';
 import { useCarparks } from '@/hooks/use-carparks';
+import { formatDistance } from '@/utils/format';
 import type { LatLng } from '@/types';
-
-// ─── helpers ────────────────────────────────────────────────────────────────
-
-function formatDistance(meters: number): string {
-  return meters >= 1000
-    ? `${(meters / 1000).toFixed(1)} km`
-    : `${Math.round(meters)} m`;
-}
 
 const SORT_OPTIONS: { key: 'distance' | 'availability'; label: string }[] = [
   { key: 'distance',     label: 'Distance'    },
   { key: 'availability', label: 'Availability' },
 ];
-
-// ─── component ──────────────────────────────────────────────────────────────
 
 export default function Carparks() {
   const navigate       = useNavigate();
@@ -99,8 +91,6 @@ export default function Carparks() {
 
   const loading = geocoding || loadingCarparks;
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 dark:from-blue-50 dark:via-slate-50 dark:to-blue-50 text-white dark:text-slate-800">
       <div className="px-5 pt-12 pb-6 max-w-lg mx-auto">
@@ -174,9 +164,7 @@ export default function Carparks() {
 
         {/* ── Carpark list ── */}
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-4 border-slate-700 border-t-teal-400 rounded-full animate-spin" />
-          </div>
+          <LoadingSpinner />
         ) : (
           <div className="space-y-3 pb-8">
             <AnimatePresence>

@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import type { Carpark, LatLng } from '@/types';
+import { getTileUrl } from '@/utils/map';
 
 // Fix default marker icon (leaflet's _getIconUrl is not in the TS typings)
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -36,9 +37,7 @@ interface MiniMapProps {
 
 export default function MiniMap({ carparks, center, onMarkerClick }: MiniMapProps) {
   const { theme } = useTheme();
-  const tileUrl = theme === 'dark'
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  const tileUrl = getTileUrl(theme);
 
   return (
     <div className="rounded-2xl overflow-hidden border border-slate-700/50 dark:border-slate-700/50 h-48">

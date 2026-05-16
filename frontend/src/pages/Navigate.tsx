@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import L from 'leaflet';
 import { useNavigationPolling } from '@/hooks/use-navigation-polling';
 import { getDistanceM } from '@/utils/geo';
+import { getTileUrl } from '@/utils/map';
 import { MapUpdater } from '@/components/map/MapUpdater';
 import { FloatingBtn } from '@/components/ui/floating-btn';
 import type { LatLng } from '@/types';
@@ -130,9 +131,7 @@ export default function Navigate() {
 
   // ── Tile URL ───────────────────────────────────────────────────────────────
 
-  const tileUrl = theme === 'dark'
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  const tileUrl = getTileUrl(theme);
 
   // ── Loading / error screens ────────────────────────────────────────────────
 

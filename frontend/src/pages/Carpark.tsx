@@ -1,12 +1,14 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from 'next-themes';
-import { ArrowLeft, Star, Car, Clock, DollarSign, Zap, Smartphone, Navigation, Heart, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Star, Car, Clock, DollarSign, Zap, Smartphone, Navigation, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import { useSaveCarpark } from '@/hooks/use-favorites';
+import { StatBlock } from '@/components/carpark/stat-block';
+import { getTileUrl } from '@/utils/map';
 
 export default function Carpark() {
   const navigate = useNavigate();
@@ -24,9 +26,7 @@ export default function Carpark() {
     );
   }
 
-  const tileUrl = theme === 'dark'
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  const tileUrl = getTileUrl(theme);
 
   const availPct = carpark.total_capacity > 0
     ? (carpark.available_lots / carpark.total_capacity) * 100
@@ -158,25 +158,6 @@ export default function Carpark() {
           </div>
         </div>
       </motion.div>
-    </div>
-  );
-}
-
-interface StatBlockProps {
-  icon: LucideIcon;
-  label: string;
-  children: React.ReactNode;
-  className?: string;
-}
-
-function StatBlock({ icon: Icon, label, children, className }: StatBlockProps) {
-  return (
-    <div className="bg-slate-700/30 dark:bg-slate-200/30 rounded-xl p-3">
-      <div className="flex items-center gap-2 mb-1">
-        <Icon className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600" />
-        <span className="text-xs text-slate-400 dark:text-slate-600">{label}</span>
-      </div>
-      <p className={`text-sm font-semibold ${className}`}>{children}</p>
     </div>
   );
 }

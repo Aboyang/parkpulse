@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Navigation, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Navigation, Mail, Lock, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { APP_NAME, APP_TAGLINE } from '@/lib/config';
 import { useAuth, useSignup } from '@/hooks/useAuth';
+import { IconInput } from '@/components/ui/icon-input';
+import { StatusAlert } from '@/components/ui/status-alert';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -103,82 +105,39 @@ export default function Auth() {
                 : 'Sign in to your account'}
             </p>
 
-            {/* SUCCESS MESSAGE */}
-            {success && (
-              <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 mb-4">
-                <p className="text-sm text-green-400">{success}</p>
-              </div>
-            )}
-
-            {/* ERROR MESSAGE */}
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-4">
-                <p className="text-sm text-red-400">{error}</p>
-              </div>
-            )}
+            {success && <StatusAlert type="success" message={success} />}
+            {error   && <StatusAlert type="error"   message={error}   />}
 
             <form onSubmit={handleSubmit} className="space-y-4">
 
-              {/* NAME (signup only) */}
               {isSignup && (
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Name</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <Input
-                      value={name}
-                      onChange={(e) => {
-                        setName(e.target.value);
-                        setSuccess('');
-                      }}
-                      className="pl-10 h-12 bg-slate-900/50 border-slate-700"
-                    />
-                  </div>
-                </div>
+                <IconInput
+                  label="Name"
+                  icon={User}
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setSuccess(''); }}
+                />
               )}
 
-              {/* EMAIL */}
-              <div>
-                <label className="text-xs text-slate-400 mb-1 block">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setSuccess('');
-                    }}
-                    className="pl-10 h-12 bg-slate-900/50 border-slate-700"
-                  />
-                </div>
-              </div>
+              <IconInput
+                label="Email"
+                icon={Mail}
+                type="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setSuccess(''); }}
+              />
 
-              {/* PASSWORD */}
-              <div>
-                <label className="text-xs text-slate-400 mb-1 block">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setSuccess('');
-                    }}
-                    className="pl-10 pr-10 h-12 bg-slate-900/50 border-slate-700"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
+              <IconInput
+                label="Password"
+                icon={Lock}
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setSuccess(''); }}
+                showToggle
+                toggled={showPassword}
+                onToggle={() => setShowPassword(!showPassword)}
+              />
 
-              {/* CONFIRM PASSWORD */}
               {isSignup && (
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">
