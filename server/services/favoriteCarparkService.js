@@ -1,7 +1,6 @@
-import { carparkDB } from "../utils/carparkDB.js";
-import { Carpark } from "../models/carpark.js";
 import { FavoriteCarpark } from "../models/favoriteCarpark.js";
 import { dynamoAdapter } from "../db/index.js";
+import { enrichFavoriteWithCarpark } from "../helpers/favoriteCarparkHelper.js";
 
 class FavoriteCarparkService {
   constructor(adapter = dynamoAdapter) {
@@ -17,12 +16,9 @@ class FavoriteCarparkService {
 
   async getFavorites(userId) {
     const items = await this.db.query(this.tableName, { userId });
-
     return items.map((item) => {
       const favorite = FavoriteCarpark.fromDB(item);
-      const raw = carparkDB.find((c) => c.car_park_no === favorite.carparkId);
-      const carpark = new Carpark(raw);
-      return favorite.toJSON(carpark);
+      return enrichFavoriteWithCarpark(favorite);
     });
   }
 

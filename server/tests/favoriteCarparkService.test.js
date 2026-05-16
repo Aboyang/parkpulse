@@ -1,7 +1,7 @@
 import { vi, describe, test, expect, beforeEach } from "vitest";
 import FavoriteCarparkService from "../services/favoriteCarparkService.js";
 
-vi.mock("../utils/carparkDB.js", () => ({
+vi.mock("../data/carparkDB.js", () => ({
   carparkDB: [
     {
       car_park_no: "CP1",

@@ -1,9 +1,10 @@
 import { CognitoIdentityProviderClient, SignUpCommand, ConfirmSignUpCommand, InitiateAuthCommand, GlobalSignOutCommand } from "@aws-sdk/client-cognito-identity-provider";
-import crypto, { randomUUID } from "crypto";
+import { randomUUID } from "crypto";
 import dotenv from "dotenv";
 import path from "path";
 import { User } from "../models/user.js";
 import { dynamoAdapter } from "../db/index.js";
+import { computeSecretHash, decodeIdToken } from "../helpers/authHelper.js";
 
 dotenv.config({ path: path.resolve("../../.env") });
 
@@ -19,20 +20,12 @@ export class AuthService {
     this.db = adapter;
   }
 
-  getSecretHash(username) {
-    if (!this.appClientSecret) return undefined;
-    return crypto
-      .createHmac("SHA256", this.appClientSecret)
-      .update(username + this.appClientId)
-      .digest("base64");
-  }
-
   async signUp(email, password, name) {
     const username = randomUUID();
 
     const command = new SignUpCommand({
       ClientId: this.appClientId,
-      SecretHash: this.getSecretHash(username),
+      SecretHash: computeSecretHash(username, this.appClientId, this.appClientSecret),
       Username: username,
       Password: password,
       UserAttributes: [
@@ -53,7 +46,7 @@ export class AuthService {
   async confirmSignUp(email, code) {
     const command = new ConfirmSignUpCommand({
       ClientId: this.appClientId,
-      SecretHash: this.getSecretHash(email),
+      SecretHash: computeSecretHash(email, this.appClientId, this.appClientSecret),
       Username: email,
       ConfirmationCode: code,
     });
@@ -69,7 +62,7 @@ export class AuthService {
       AuthParameters: {
         USERNAME: email,
         PASSWORD: password,
-        SECRET_HASH: this.getSecretHash(email),
+        SECRET_HASH: computeSecretHash(email, this.appClientId, this.appClientSecret),
       },
     });
 
@@ -81,10 +74,7 @@ export class AuthService {
 
     const { IdToken, AccessToken } = result.AuthenticationResult;
 
-    const payload = JSON.parse(
-      Buffer.from(IdToken.split(".")[1], "base64url").toString("utf8")
-    );
-    const userId = payload.sub;
+    const { sub: userId } = decodeIdToken(IdToken);
 
     const item = await this.db.get(this.usersTable, { userId });
 

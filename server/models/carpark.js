@@ -1,4 +1,4 @@
-import { svy21ToLatLon } from "../utils/coordConverter.js";
+import { svy21ToLatLon } from "../helpers/coordConverter.js";
 
 export class Carpark {
   constructor(raw) {
