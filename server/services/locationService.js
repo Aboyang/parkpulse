@@ -5,11 +5,11 @@ const pako = null;
 class LocationService {
   async getCurrentLocation() {
     try {
-      const res = await fetch("http://ip-api.com/json/");
-      const data = await res.json();
+      const response = await fetch("http://ip-api.com/json/");
+      const data = await response.json();
       return Location.fromIPApi(data).toJSON();
-    } catch (err) {
-      console.error("Failed to get location:", err);
+    } catch (error) {
+      console.error("Failed to get location:", error);
       return null;
     }
   }

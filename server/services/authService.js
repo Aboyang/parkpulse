@@ -10,7 +10,7 @@ dotenv.config({ path: path.resolve("../../.env") });
 
 export class AuthService {
   constructor(adapter = dynamoAdapter) {
-    this.region = "ap-southeast-1";
+    this.region = process.env.AWS_REGION;
     this.userPoolId = process.env.USER_POOL_ID;
     this.appClientId = process.env.APP_CLIENT_ID;
     this.appClientSecret = process.env.APP_CLIENT_SECRET;
@@ -76,9 +76,9 @@ export class AuthService {
 
     const { sub: userId } = decodeIdToken(IdToken);
 
-    const item = await this.db.get(this.usersTable, { userId });
+    const userRecord = await this.db.get(this.usersTable, { userId });
 
-    const user = User.fromDB(item);
+    const user = User.fromDB(userRecord);
 
     console.log("login success:", { userId, email, name: user.name });
 
@@ -91,11 +91,11 @@ export class AuthService {
   }
 
   async getUserProfile(userId) {
-    const item = await this.db.get(this.usersTable, { userId });
+    const userRecord = await this.db.get(this.usersTable, { userId });
 
-    if (!item) return null;
+    if (!userRecord) return null;
 
-    return User.fromDB(item).toJSON();
+    return User.fromDB(userRecord).toJSON();
   }
 
   async logout(accessToken) {

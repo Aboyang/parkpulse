@@ -8,10 +8,10 @@ class RateCarparkService {
   }
 
   async rateCarpark(carparkId, userId, rating, comment) {
-    const current = await this.db.get(this.tableName, { carparkId });
+    const existingRating = await this.db.get(this.tableName, { carparkId });
 
-    const carparkRating = current
-      ? CarparkRating.fromDB(current)
+    const carparkRating = existingRating
+      ? CarparkRating.fromDB(existingRating)
       : CarparkRating.empty(carparkId);
 
     carparkRating.addRating(userId, rating, comment);
@@ -22,11 +22,11 @@ class RateCarparkService {
   }
 
   async getCarparkRating(carparkId) {
-    const item = await this.db.get(this.tableName, { carparkId });
+    const ratingRecord = await this.db.get(this.tableName, { carparkId });
 
-    if (!item) return CarparkRating.empty(carparkId).toJSON();
+    if (!ratingRecord) return CarparkRating.empty(carparkId).toJSON();
 
-    return CarparkRating.fromDB(item).toJSON();
+    return CarparkRating.fromDB(ratingRecord).toJSON();
   }
 }
 

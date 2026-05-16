@@ -1,4 +1,4 @@
-import CarparkAvailabilityService from "../services/carparkService.js";
+import CarparkAvailabilityService, { DEFAULT_SEARCH_RADIUS_METRES } from "../services/carparkService.js";
 import { getCache, setCache } from "../config/redis.js";
 
 const service = new CarparkAvailabilityService();
@@ -13,7 +13,7 @@ export async function getCarparks(req, res) {
             return res.status(400).json({ error: "Address is required" });
         }
 
-        const parsedRadius = radius ? parseInt(radius) : 500;
+        const parsedRadius = radius ? parseInt(radius) : DEFAULT_SEARCH_RADIUS_METRES;
         const cacheKey = `carparks:${address}:${parsedRadius}:${ev_charging || "any"}`;
 
         const cachedData = await getCache(cacheKey);

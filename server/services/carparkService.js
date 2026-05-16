@@ -11,6 +11,8 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: path.resolve("../.env") });
 
+export const DEFAULT_SEARCH_RADIUS_METRES = 500;
+
 const rateService = new RateCarparkService();
 
 class CarparkAvailabilityService {
@@ -39,7 +41,7 @@ class CarparkAvailabilityService {
     };
   }
 
-  async fetchCarparkAvailability() {
+  async fetchAllCarparkAvailability() {
     const url = "https://api.data.gov.sg/v1/transport/carpark-availability";
     try {
       const { data } = await axios.get(url, {
@@ -53,33 +55,33 @@ class CarparkAvailabilityService {
   }
 
   async fetchCarparkAvailabilityById(carparkId) {
-    const availabilityData = await this.fetchCarparkAvailability();
+    const availabilityData = await this.fetchAllCarparkAvailability();
     const entry = availabilityData.find((a) => a.carpark_number === carparkId);
     console.log(`>>> Availability for ${carparkId}`);
     const info = entry?.carpark_info?.[0];
     return info;
   }
 
-  async searchNearbyCarpark(latitude, longitude, radius, evCharging) {
-    const nearby = filterAndSortByDistance(latitude, longitude, radius);
-    console.log(`>>> Found ${nearby.length} carparks within ${radius}m`);
+  async fetchEnrichedCarparksAtCoords(latitude, longitude, radius, evCharging) {
+    const nearbyCarparks = filterAndSortByDistance(latitude, longitude, radius);
+    console.log(`>>> Found ${nearbyCarparks.length} carparks within ${radius}m`);
 
-    const availabilityData = await this.fetchCarparkAvailability();
-    console.log(`>>> Fetching availability for carparks: ${nearby.map((c) => c.carpark.carparkNo).join(", ")}`);
+    const availabilityData = await this.fetchAllCarparkAvailability();
+    console.log(`>>> Fetching availability for carparks: ${nearbyCarparks.map((c) => c.carpark.carparkNo).join(", ")}`);
 
-    const enriched = await Promise.all(
-      nearby.map(async ({ carpark, dist }) => {
+    const enrichedCarparks = await Promise.all(
+      nearbyCarparks.map(async ({ carpark, distance }) => {
         const rating = await rateService.getCarparkRating(carpark.carparkNo);
-        return buildEnrichedEntry(carpark, dist, availabilityData, rating);
+        return buildEnrichedEntry(carpark, distance, availabilityData, rating);
       })
     );
 
-    return filterByEV(enriched, evCharging);
+    return filterByEV(enrichedCarparks, evCharging);
   }
 
-  async findCarparks(address, radius = 500, evCharging = false) {
-    const geo = await this.getGeocode(address);
-    let carparks = await this.searchNearbyCarpark(geo.latitude, geo.longitude, radius, evCharging);
+  async findCarparks(address, radius = DEFAULT_SEARCH_RADIUS_METRES, evCharging = false) {
+    const geocodeResult = await this.getGeocode(address);
+    let carparks = await this.fetchEnrichedCarparksAtCoords(geocodeResult.latitude, geocodeResult.longitude, radius, evCharging);
     carparks = sortByAvailability(carparks);
     console.log(">>> Final carparks:", carparks.map(c => `${c.carpark_no} (${c.available_lots} lots)`));
     return carparks;

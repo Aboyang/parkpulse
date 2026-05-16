@@ -8,25 +8,27 @@ const OSRM_BASE_URL = process.env.OSRM_BASE_URL || 'http://router.project-osrm.o
 
 export class NavigateService {
   async getRoute(start, end) {
-    let pts, steps;
+    let routePoints, steps;
 
     try {
-      const url = `${OSRM_BASE_URL}/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson&steps=true`;
-      const res  = await fetch(url);
-      const data = await res.json();
+      const [startLat, startLon] = start;
+      const [endLat, endLon] = end;
+      const url = `${OSRM_BASE_URL}/route/v1/driving/${startLon},${startLat};${endLon},${endLat}?overview=full&geometries=geojson&steps=true`;
+      const response = await fetch(url);
+      const data = await response.json();
 
       if (data.routes?.[0]) {
-        ({ pts, steps } = parseOSRMRoute(data));
+        ({ pts: routePoints, steps } = parseOSRMRoute(data));
       }
-    } catch (e) {
-      console.warn('OSRM fetch failed, falling back to straight line:', e);
+    } catch (error) {
+      console.warn('OSRM fetch failed, falling back to straight line:', error);
     }
 
-    if (!pts) {
-      ({ pts, steps } = buildStraightLine(start, end));
+    if (!routePoints) {
+      ({ pts: routePoints, steps } = buildStraightLine(start, end));
     }
 
-    const totalDist = calculateTotalDistance(pts);
-    return { pts, steps, totalDist };
+    const totalDistance = calculateTotalDistance(routePoints);
+    return { pts: routePoints, steps, totalDist: totalDistance };
   }
 }
