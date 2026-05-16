@@ -4,32 +4,32 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Navigation, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { APP_NAME, APP_TAGLINE, API_BASE_URL } from '@/lib/config';
-import { useAuth } from '@/hooks/useAuth';
+import { APP_NAME, APP_TAGLINE } from '@/lib/config';
+import { useAuth, useSignup } from '@/hooks/useAuth';
 
 export default function Auth() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const signupMutation = useSignup();
 
   const [isSignup, setIsSignup] = useState(false);
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [name,            setName]            = useState('');
+  const [email,           setEmail]           = useState('');
+  const [password,        setPassword]        = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const [showPassword, setShowPassword] = useState(false);
 
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(''); // ✅ NEW
-
+  const [error,   setError]   = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     setError('');
-    setSuccess(''); // ✅ reset both
+    setSuccess('');
 
     if (!email || !password) {
       setError('Email and password are required');
@@ -55,13 +55,7 @@ export default function Auth() {
 
     try {
       if (isSignup) {
-        const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Something went wrong');
+        await signupMutation.mutateAsync({ email, password, name });
         setIsSignup(false);
         setSuccess('Account created successfully. Please log in.');
       } else {
@@ -109,14 +103,14 @@ export default function Auth() {
                 : 'Sign in to your account'}
             </p>
 
-            {/* ✅ SUCCESS MESSAGE */}
+            {/* SUCCESS MESSAGE */}
             {success && (
               <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 mb-4">
                 <p className="text-sm text-green-400">{success}</p>
               </div>
             )}
 
-            {/* ❌ ERROR MESSAGE */}
+            {/* ERROR MESSAGE */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-4">
                 <p className="text-sm text-red-400">{error}</p>

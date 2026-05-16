@@ -1,24 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { API_BASE_URL } from '@/lib/config';
 import { useTheme } from 'next-themes';
-import { ArrowLeft, Star, Car, Clock, DollarSign, Zap, Shield, Smartphone, Navigation, Heart } from 'lucide-react';
+import { ArrowLeft, Star, Car, Clock, DollarSign, Zap, Smartphone, Navigation, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { useSaveCarpark } from '@/hooks/use-favorites';
 
 export default function Carpark() {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme } = useTheme();
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
 
-  // Carpark passed via navigation state
-  const carpark = location.state?.carpark;
-
-  console.log(carpark)
+  const carpark      = location.state?.carpark;
+  const saveMutation = useSaveCarpark();
 
   if (!carpark) {
     return (
@@ -48,32 +44,14 @@ export default function Carpark() {
     { label: 'Free Parking', enabled: carpark.free_parking, icon: DollarSign, color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
   ];
 
-  const handleSaveCarpark = async () => {
+  const handleSaveCarpark = () => {
     const userId = localStorage.getItem('userId');
-    if (isSaved) return;
-
+    if (saveMutation.isSuccess) return;
     if (!userId) {
       navigate('/Auth');
       return;
     }
-
-    try {
-      setIsSaving(true);
-      const response = await fetch(`${API_BASE_URL}/api/favorites`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, carparkId: carpark.id }),
-      });
-
-      if (!response.ok) throw new Error('Failed to save favorite');
-
-      setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 3000);
-    } catch (err) {
-      console.error('Failed to save carpark:', err);
-    } finally {
-      setIsSaving(false);
-    }
+    saveMutation.mutate({ userId, carparkId: carpark.id });
   };
 
   return (
@@ -167,15 +145,15 @@ export default function Carpark() {
             </Button>
             <Button
               onClick={handleSaveCarpark}
-              disabled={isSaving}
+              disabled={saveMutation.isPending}
               className={`w-full h-14 font-semibold text-base rounded-xl transition-all ${
-                isSaved
+                saveMutation.isSuccess
                   ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
                   : 'bg-slate-700/50 hover:bg-slate-700 dark:bg-slate-300/50 dark:hover:bg-slate-300 text-white dark:text-slate-900'
               }`}
             >
-              <Heart className={`w-5 h-5 mr-2 ${isSaved ? 'fill-current' : ''}`} />
-              {isSaved ? 'Saved!' : 'Save Carpark'}
+              <Heart className={`w-5 h-5 mr-2 ${saveMutation.isSuccess ? 'fill-current' : ''}`} />
+              {saveMutation.isSuccess ? 'Saved!' : 'Save Carpark'}
             </Button>
           </div>
         </div>

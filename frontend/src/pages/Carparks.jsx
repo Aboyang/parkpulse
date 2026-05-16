@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import { ArrowLeft, SlidersHorizontal, MapPin, ArrowUpDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CarparkCard from '../components/carpark/CarparkCard';
 import MiniMap from '../components/carpark/MiniMap';
 import FilterPanel from '../components/carpark/FilterPanel';
-import { DEFAULT_CENTER, API_BASE_URL } from '@/lib/config';
+import { DEFAULT_CENTER } from '@/lib/config';
+import { useCarparks } from '@/hooks/use-carparks';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -66,43 +65,14 @@ export default function Carparks() {
   }, [timestamp]);
 
   // ── Fetch carparks ────────────────────────────────────────────────────────
-  const { data: allCarparks = [], isLoading: loadingCarparks } = useQuery({
-    queryKey: ['local-carparks', query, timestamp, filterRadius, evCharge],
-    queryFn:  async () => {
-      try {
-        const params = {};
-        if (query)        params.address     = query;
-        if (filterRadius) params.radius      = filterRadius;
-        if (evCharge)     params.ev_charging = true;
-
-        const res      = await axios.get(`${API_BASE_URL}/api/carparks`, { params });
-        const carparks = res.data.carparks || [];
-        console.log(carparks)
-
-        return carparks.map((cp) => ({
-          id:                   cp.carpark_no,
-          name:                 cp.name,
-          distance:             cp.distance,
-          latitude:             cp.location?.latitude  ?? 0,
-          longitude:            cp.location?.longitude ?? 0,
-          available_lots:       cp.available_lots,
-          total_capacity:       cp.total_capacity,
-          operating_hours:      cp.operating_hours,
-          free_parking:         cp.free_parking,
-          free_parking_details: cp.free_parking_details,
-          payment:              cp.payment,
-          ev_charging:          cp.ev_charging,
-          average_rating:       cp.average_rating,
-          total_ratings:        cp.total_ratings,
-        }));
-      } catch (err) {
-        console.error('Error fetching carparks:', err.message);
-        return [];
-      }
-    },
-    staleTime: 5  * 60 * 1000,
-    gcTime:    10 * 60 * 1000,
+  const carparksQuery  = useCarparks({
+    address:     query,
+    radius:      filterRadius,
+    ev_charging: evCharge || undefined,
+    _t:          timestamp,
   });
+  const allCarparks     = carparksQuery.data ?? [];
+  const loadingCarparks = carparksQuery.isLoading;
 
   // ── Filter + sort ─────────────────────────────────────────────────────────
   const filtered = useMemo(() => {

@@ -1,52 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import axios from 'axios';
-import { API_BASE_URL } from '@/lib/config';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { motion } from 'framer-motion';
 import { MessageSquare } from 'lucide-react';
 import StarRating from '../components/carpark/StarRating';
+import { useSubmitRating } from '@/hooks/use-rating';
 
 export default function Rate() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const params = new URLSearchParams(window.location.search);
-  const carparkId = params.get('id');
-  const [rating, setRating] = useState(0);
+  const navigate    = useNavigate();
+  const location    = useLocation();
+  const params      = new URLSearchParams(window.location.search);
+  const carparkId   = params.get('id');
+  const carpark     = location.state?.carpark || null;
+
+  const [rating,  setRating]  = useState(0);
   const [comment, setComment] = useState('');
-  const [carpark, setCarpark] = useState(location.state?.carpark || null);
 
-  const userId = localStorage.getItem('userId'); // <-- get user ID from local storage
+  const userId = localStorage.getItem('userId');
 
-  // Fetch current carpark info + rating from backend
-  const { data: carparkData, isLoading } = useQuery({
-    queryKey: ['carpark-rate', carparkId],
-    queryFn: async () => {
-      const res = await axios.get(`/api/rating/${carparkId}`);
-      return res.data.data;
-    },
-    enabled: !!carparkId, // optional: only fetch if carparkId exists
-    onSuccess: (data) => {
-      setCarpark((prev) => ({ ...prev, ...data }));
-    },
-  });
+  const submitMutation = useSubmitRating();
 
-  const submitMutation = useMutation({
-    mutationFn: async () => {
-      if (!userId) throw new Error('User not logged in');
-      await axios.post(`${API_BASE_URL}/api/rating`, {
-        carparkId,
-        userId,
-        rating,
-        comment: comment || '',
-      });
-    },
-    onSuccess: () => {
-      navigate(`/SavePrompt?id=${carparkId}`, { state: { carpark } });
-    },
-  });
+  const handleSubmit = () => {
+    submitMutation.mutate(
+      { carparkId, userId, rating, comment: comment || '' },
+      { onSuccess: () => navigate(`/SavePrompt?id=${carparkId}`, { state: { carpark } }) },
+    );
+  };
 
   if (!carpark) return <p>Loading carpark data...</p>;
 
@@ -92,11 +72,11 @@ export default function Rate() {
         {/* Buttons */}
         <div className="space-y-3">
           <Button
-            onClick={() => submitMutation.mutate()}
-            disabled={rating === 0 || submitMutation.isLoading}
+            onClick={handleSubmit}
+            disabled={rating === 0 || submitMutation.isPending}
             className="w-full h-14 bg-teal-500 hover:bg-teal-600 disabled:opacity-40 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/25"
           >
-            {submitMutation.isLoading ? 'Submitting...' : 'Submit Rating'}
+            {submitMutation.isPending ? 'Submitting...' : 'Submit Rating'}
           </Button>
           <button
             onClick={() => navigate(`/SavePrompt?id=${carparkId}`, { state: { carpark } })}

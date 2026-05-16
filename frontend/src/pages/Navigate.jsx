@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { API_BASE_URL } from '@/lib/config';
 import { useTheme } from 'next-themes';
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
 import {
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import L from 'leaflet';
+import { useRoute } from '@/hooks/use-navigate';
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -46,16 +46,6 @@ function getBrowserPosition() {
       { enableHighAccuracy: true, timeout: 8000 }
     );
   });
-}
-
-async function fetchRoute(start, end) {
-  const res = await fetch(`${API_BASE_URL}/api/navigate/route`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ start, end }),
-  });
-  if (!res.ok) throw new Error('Route fetch failed');
-  return res.json(); // { pts, steps, totalDist }
 }
 
 function getDistanceM(a, b) {
@@ -101,6 +91,8 @@ export default function Navigate() {
   const carpark     = location.state?.carpark;
   const destination = carpark ? [carpark.latitude, carpark.longitude] : null;
 
+  const routeMutation = useRoute();
+
   useEffect(() => { mutedRef.current = muted; }, [muted]);
 
   function speak(text) {
@@ -134,7 +126,7 @@ export default function Navigate() {
       setLocationStatus('granted');
 
       try {
-        const { pts, steps, totalDist } = await fetchRoute(pos, destination);
+        const { pts, steps, totalDist } = await routeMutation.mutateAsync({ start: pos, end: destination });
         if (cancelled) return;
 
         totalDistRef.current = totalDist;
@@ -157,7 +149,7 @@ export default function Navigate() {
         setUserPos(updated);
 
         try {
-          const { pts, steps, totalDist } = await fetchRoute(updated, destination);
+          const { pts, steps, totalDist } = await routeMutation.mutateAsync({ start: updated, end: destination });
           if (cancelled) return;
 
           totalDistRef.current = totalDist;
@@ -193,7 +185,7 @@ export default function Navigate() {
     setLocationStatus('granted');
 
     try {
-      const { pts, steps, totalDist } = await fetchRoute(pos, destination);
+      const { pts, steps, totalDist } = await routeMutation.mutateAsync({ start: pos, end: destination });
       totalDistRef.current = totalDist;
       stepsRef.current     = steps;
       setRoute(pts);
@@ -213,7 +205,7 @@ export default function Navigate() {
       setUserPos(updated);
 
       try {
-        const { pts, steps, totalDist } = await fetchRoute(updated, destination);
+        const { pts, steps, totalDist } = await routeMutation.mutateAsync({ start: updated, end: destination });
         totalDistRef.current = totalDist;
         stepsRef.current     = steps;
         setRoute(pts);

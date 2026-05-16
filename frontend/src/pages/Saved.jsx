@@ -1,88 +1,27 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '@/lib/config';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bookmark, Trash2, Navigation } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { useSavedCarparks, useDeleteSavedCarpark } from '@/hooks/use-favorites';
+import { useCarparkAvailabilities } from '@/hooks/use-carpark-availability';
+import { useCarparkRatings } from '@/hooks/use-rating';
 
 export default function Saved() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const userId = localStorage.getItem('userId');
+  const userId   = localStorage.getItem('userId');
 
-  // Fetch saved carparks
-  const { data: saved = [], isLoading: loadingSaved } = useQuery({
-    queryKey: ['saved-carparks', userId],
-    queryFn: async () => {
-      if (!userId) return [];
-      const res = await fetch(`${API_BASE_URL}/api/favorites/${userId}`);
-      if (!res.ok) throw new Error('Failed to fetch saved carparks');
-      return res.json();
-    },
-    enabled: !!userId,
-  });
+  const savedQuery = useSavedCarparks(userId);
+  const saved      = savedQuery.data ?? [];
 
-  // Batch fetch availability for all saved carparks
-  const { data: availabilities = {}, isLoading: loadingLots } = useQuery({
-    queryKey: ['carpark-availabilities', saved.map(c => c.carparkId).join(',')],
-    queryFn: async () => {
-      const results = await Promise.all(
-        saved.map(async (item) => {
-          try {
-            const res = await fetch(`${API_BASE_URL}/api/carparks/${item.carparkId}`);
-            if (!res.ok) throw new Error('Failed');
-            const data = await res.json();
-            return [item.carparkId, data?.availability?.lots_available ?? 'No data'];
-          } catch {
-            return [item.carparkId, 'No data'];
-          }
-        })
-      );
-      return Object.fromEntries(results);
-    },
-    enabled: saved.length > 0,
-  });
+  const savedIds            = saved.map((c) => c.carparkId);
+  const availabilitiesQuery = useCarparkAvailabilities(savedIds);
+  const ratingsQuery        = useCarparkRatings(savedIds);
 
-  // Batch rating
-  const { data: ratings = {}, isLoading: loadingRatings } = useQuery({
-    queryKey: ['carpark-ratings', saved.map(c => c.carparkId).join(',')],
-    queryFn: async () => {
-      const results = await Promise.all(
-        saved.map(async (item) => {
-          try {
-            const res = await fetch(`${API_BASE_URL}/api/rating/${item.carparkId}`);
-            if (!res.ok) throw new Error('Failed to fetch rating');
-            const json = await res.json();
-            // Return only the `data` field
-            return [item.carparkId, json.data ?? { message: 'No data' }];
-          } catch {
-            return [item.carparkId, { message: 'No data' }];
-          }
-        })
-      );
-      return Object.fromEntries(results);
-    },
-    enabled: saved.length > 0,
-  });
+  const availabilities = availabilitiesQuery.data ?? {};
+  const ratings        = ratingsQuery.data        ?? {};
 
-  useEffect(() => {
-    console.log("ratings:", ratings);
-  }, [ratings]);
-
-  // Delete saved carpark
-  const deleteMutation = useMutation({
-    mutationFn: async (carparkId) => {
-      const res = await fetch(`${API_BASE_URL}/api/favorites`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, carparkId }),
-      });
-      if (!res.ok) throw new Error('Failed to remove favorite');
-      return res.json();
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['saved-carparks', userId] }),
-  });
+  const deleteMutation = useDeleteSavedCarpark();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-white">
@@ -94,7 +33,7 @@ export default function Saved() {
           <h1 className="text-lg font-semibold">Saved Carparks</h1>
         </div>
 
-        {loadingSaved ? (
+        {savedQuery.isLoading ? (
           <div className="flex justify-center py-16">
             <div className="w-8 h-8 border-4 border-slate-700 border-t-teal-400 rounded-full animate-spin" />
           </div>
@@ -129,7 +68,9 @@ export default function Saved() {
                     <div className="min-w-0">
                       <p className="text-white font-medium text-sm truncate">{item.carparkName}</p>
                       <p className="text-slate-500 text-xs">
-                        {loadingLots ? 'Loading lots...' : `Available Lots: ${availabilities[item.carparkId]}`}
+                        {availabilitiesQuery.isLoading
+                          ? 'Loading lots...'
+                          : `Available Lots: ${availabilities[item.carparkId]}`}
                       </p>
                     </div>
                   </div>
@@ -139,14 +80,14 @@ export default function Saved() {
                         navigate(`/Carpark?id=${item.carparkId}`, {
                           state: {
                             carpark: {
-                              id: item.carparkId,
-                              name: item.carparkName,
-                              latitude: item.latitude,
-                              longitude: item.longitude,
+                              id:              item.carparkId,
+                              name:            item.carparkName,
+                              latitude:        item.latitude,
+                              longitude:       item.longitude,
                               operating_hours: item.operating_hours,
-                              available_lots: availabilities[item.carparkId] ?? 'No data',
-                              average_rating: ratings[item.carparkId]?.averageRating,
-                              total_ratings: ratings[item.carparkId]?.totalRatings,
+                              available_lots:  availabilities[item.carparkId] ?? 'No data',
+                              average_rating:  ratings[item.carparkId]?.averageRating,
+                              total_ratings:   ratings[item.carparkId]?.totalRatings,
                             },
                           },
                         })
@@ -156,7 +97,7 @@ export default function Saved() {
                       <Navigation className="w-4 h-4 text-teal-400" />
                     </button>
                     <button
-                      onClick={() => deleteMutation.mutate(item.carparkId)}
+                      onClick={() => deleteMutation.mutate({ userId, carparkId: item.carparkId })}
                       className="p-2 rounded-lg hover:bg-red-500/20 transition-colors"
                     >
                       <Trash2 className="w-4 h-4 text-red-400" />

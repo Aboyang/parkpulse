@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/lib/config';
+import axiosInstance from '@/utils/axios';
 
 export function useAuth() {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
@@ -56,4 +58,13 @@ export function useAuth() {
     login,
     logout,
   };
+}
+
+export function useSignup() {
+  return useMutation({
+    mutationFn: async ({ email, password, name }) => {
+      const { data } = await axiosInstance.post('/api/auth/signup', { email, password, name })
+      return data
+    },
+  })
 }
