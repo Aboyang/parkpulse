@@ -4,6 +4,7 @@
 
 # Claude
 CLAUDE.md
+*.CLAUDE.md
 
 # Node.js dependencies
 server/node_modules/
