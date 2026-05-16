@@ -29,11 +29,11 @@ export class NavigateService {
       console.warn('OSRM fetch failed, falling back to straight line:', error);
     }
 
-    if (!routePoints) {
+    if (!routePoints || !steps) {
       ({ pts: routePoints, steps } = buildStraightLine(start, end));
     }
 
     const totalDistance = calculateTotalDistance(routePoints);
-    return { pts: routePoints, steps: steps!, totalDist: totalDistance };
+    return { pts: routePoints, steps, totalDist: totalDistance };
   }
 }

@@ -33,11 +33,13 @@ export class CarparkRating {
     this.comments = comments.map((c) => new RatingComment(c));
   }
 
-  addRating(userId: string, rating: number, comment: string): void {
+  addRating(userId: string, rating: number, comment?: string): void {
     this.totalRatings += 1;
     this.averageRating =
       (this.averageRating * (this.totalRatings - 1) + rating) / this.totalRatings;
-    this.comments.push(new RatingComment({ userId, comment }));
+    if (comment !== undefined) {
+      this.comments.push(new RatingComment({ userId, comment }));
+    }
   }
 
   toDB(): { carparkId: string; averageRating: number; totalRatings: number; comments: RatingCommentRecord[] } {
