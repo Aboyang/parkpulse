@@ -123,6 +123,13 @@ The backend will be available at `http://localhost:3000`. Update `VITE_API_BASE_
 │   └── src/
 │       ├── App.jsx
 │       ├── main.jsx
+│       ├── pages.config.js
+│       ├── api/                    # localStorage-backed mock data layer
+│       ├── components/
+│       │   ├── carpark/            # carpark-specific UI components
+│       │   └── ui/                 # shadcn/Radix primitives (button, badge, dialog, …)
+│       ├── hooks/
+│       ├── lib/
 │       ├── pages/
 │       │   ├── Auth.jsx            # login / signup
 │       │   ├── Home.jsx            # search + radius + EV filter
@@ -133,21 +140,7 @@ The backend will be available at `http://localhost:3000`. Update `VITE_API_BASE_
 │       │   ├── SavePrompt.jsx      # prompt to save after viewing
 │       │   ├── Rate.jsx            # submit a rating
 │       │   └── ThankYou.jsx
-│       ├── components/
-│       │   ├── carpark/
-│       │   │   ├── CarparkCard.jsx
-│       │   │   ├── FilterPanel.jsx
-│       │   │   ├── MiniMap.jsx
-│       │   │   ├── PreferenceToggle.jsx
-│       │   │   ├── RadiusSlider.jsx
-│       │   │   ├── SearchBar.jsx
-│       │   │   └── StarRating.jsx
-│       │   └── ui/                 # shadcn/Radix primitives (button, badge, dialog, …)
-│       ├── lib/
-│       │   ├── config.js           # API_BASE_URL + app-wide constants
-│       │   └── query-cilent.js     # TanStack Query provider setup
-│       └── hooks/
-│           └── use-mobile.jsx
+│       └── utils/
 └── server/                         # Express 5 API
     ├── Dockerfile
     ├── docker-compose.yml          # server (×N) + nginx + redis
@@ -156,20 +149,27 @@ The backend will be available at `http://localhost:3000`. Update `VITE_API_BASE_
     │   ├── nginx.docker.conf       # Nginx load balancer config (Docker)
     │   ├── nginx.config            # Nginx config for local multi-instance setup
     │   └── redis.js                # Redis client + getCache / setCache helpers
-    ├── routes/
-    │   ├── carparkRoute.js         # GET /api/carparks
-    │   ├── authRoute.js            # POST /api/auth/signup|login|logout
-    │   ├── favoriteCarparkRoute.js # GET|POST|DELETE /api/favorites
-    │   ├── rateCarparkRoute.js     # GET|POST /api/rating
-    │   ├── locationRoute.js        # GET /api/location
-    │   └── navigateRoute.js        # GET /api/navigate/route
-    ├── services/
-    │   ├── carparkService.js       # geocode + filter + availability + rating join
-    │   ├── authService.js          # Cognito USER_PASSWORD_AUTH flow
-    │   ├── favoriteCarparkService.js
-    │   ├── rateCarparkService.js
-    │   ├── locationService.js
-    │   └── navigateService.js
+    ├── controllers/
+    │   ├── authController.js
+    │   ├── carparkController.js
+    │   ├── favoriteCarparkController.js
+    │   ├── locationController.js
+    │   ├── navigateController.js
+    │   └── rateCarparkController.js
+    ├── data/
+    │   └── carparkDB.js            # static HDB carpark dump (SVY21 coords)
+    ├── db/
+    │   ├── dynamoClient.js         # DynamoDB DocumentClient singleton
+    │   ├── dynamoAdapter.js        # get / put / delete wrappers
+    │   └── index.js
+    ├── helpers/
+    │   ├── authHelper.js
+    │   ├── carparkHelper.js
+    │   ├── coordConverter.js       # SVY21 ↔ lat/lon via proj4 EPSG:3414
+    │   ├── favoriteCarparkHelper.js
+    │   └── navigateHelper.js
+    ├── middlewares/
+    │   └── portMiddleware.js       # injects serving port into responses (load balancing debug)
     ├── models/
     │   ├── carpark.js              # entity: toDB / fromDB / toJSON, SVY21 distance
     │   ├── carparkAvailability.js
@@ -177,15 +177,20 @@ The backend will be available at `http://localhost:3000`. Update `VITE_API_BASE_
     │   ├── favoriteCarpark.js
     │   ├── location.js
     │   └── user.js
-    ├── db/
-    │   ├── dynamoClient.js         # DynamoDB DocumentClient singleton
-    │   ├── dynamoAdapter.js        # get / put / delete wrappers
-    │   └── index.js
-    ├── middlewares/
-    │   └── portMiddleware.js       # injects serving port into responses (load balancing debug)
-    ├── utils/
-    │   ├── carparkDB.js            # static HDB carpark dump (SVY21 coords)
-    │   └── coordConverter.js       # SVY21 ↔ lat/lon via proj4 EPSG:3414
+    ├── routes/
+    │   ├── authRoute.js            # POST /api/auth/signup|login|logout
+    │   ├── carparkRoute.js         # GET /api/carparks
+    │   ├── favoriteCarparkRoute.js # GET|POST|DELETE /api/favorites
+    │   ├── locationRoute.js        # GET /api/location
+    │   ├── navigateRoute.js        # GET /api/navigate/route
+    │   └── rateCarparkRoute.js     # GET|POST /api/rating
+    ├── services/
+    │   ├── authService.js          # Cognito USER_PASSWORD_AUTH flow
+    │   ├── carparkService.js       # geocode + filter + availability + rating join
+    │   ├── favoriteCarparkService.js
+    │   ├── locationService.js
+    │   ├── navigateService.js
+    │   └── rateCarparkService.js
     └── tests/
         ├── carparkService.test.js
         ├── favoriteCarparkService.test.js
