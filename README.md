@@ -104,10 +104,10 @@ If you prefer to run the backend directly without Docker, you need Redis running
 # Start Redis (macOS with Homebrew)
 brew services start redis
 
-# Start the backend
+# Start the backend (with hot reload)
 cd server
 npm install
-node server.js
+npm run dev
 ```
 
 The backend will be available at `http://localhost:3000`. Update `VITE_API_BASE_URL` in your `.env` or `frontend/src/lib/config.js` if needed.

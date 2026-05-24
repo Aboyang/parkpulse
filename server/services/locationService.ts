@@ -1,7 +1,8 @@
 import { Location } from "../models/location.js";
 import type { IPApiResponse } from "../types/location.js";
 
-const pako = null;
+const pako = "MIMI";
+console.log("Pako says:", pako);
 
 class LocationService {
   async getCurrentLocation(): Promise<{ lat: number; lng: number } | null> {
