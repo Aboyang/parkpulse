@@ -16,6 +16,13 @@ export const DEFAULT_SEARCH_RADIUS_METRES = 500;
 
 const rateService = new RateCarparkService();
 
+// Coalescing registry: maps a query key to its in-flight Promise.
+// Requests with identical parameters share one Promise rather than each
+// firing a separate upstream call to OneMap / data.gov.sg.
+// Entries are deleted when the Promise settles, so failed requests
+// are never reused and the next caller gets a fresh attempt.
+const inFlightRequests = new Map<string, Promise<EnrichedCarpark[]>>();
+
 class CarparkAvailabilityService {
   private ONEMAP_API_KEY: string | undefined;
   private DATA_GOV_API_KEY: string | undefined;
@@ -88,16 +95,46 @@ class CarparkAvailabilityService {
     return filterByEV(enrichedCarparks, evCharging);
   }
 
-  async findCarparks(
+  private async doFindCarparks(
     address: string,
-    radius = DEFAULT_SEARCH_RADIUS_METRES,
-    evCharging = false
+    radius: number,
+    evCharging: boolean
   ): Promise<EnrichedCarpark[]> {
     const geocodeResult = await this.getGeocode(address);
     let carparks = await this.fetchEnrichedCarparksAtCoords(geocodeResult.latitude, geocodeResult.longitude, radius, evCharging);
     carparks = sortByAvailability(carparks);
     console.log(">>> Final carparks:", carparks.map(c => `${c.carpark_no} (${c.available_lots} lots)`));
     return carparks;
+  }
+
+  async findCarparks(
+    address: string,
+    radius = DEFAULT_SEARCH_RADIUS_METRES,
+    evCharging = false
+  ): Promise<EnrichedCarpark[]> {
+    const coalescingKey = `${address}:${radius}:${evCharging}`;
+
+    // If an identical request is already in-flight, return its Promise directly.
+    // All callers awaiting the same key share one upstream round-trip.
+    if (inFlightRequests.has(coalescingKey)) {
+      console.log(`>>> [COALESCING] Joined in-flight request for "${coalescingKey}"`);
+      return inFlightRequests.get(coalescingKey)!;
+    }
+
+    // No in-flight match — start the real work. Store the Promise synchronously
+    // (before any await) so concurrent arrivals see it immediately.
+    console.log(`>>> [COALESCING] New upstream request for "${coalescingKey}"`);
+    const requestPromise = this.doFindCarparks(address, radius, evCharging);
+    inFlightRequests.set(coalescingKey, requestPromise);
+
+    // Remove the entry once settled — whether it resolved or rejected.
+    // This ensures a failed request is never handed to a future caller.
+    requestPromise.finally(() => {
+      inFlightRequests.delete(coalescingKey);
+      console.log(`>>> [COALESCING] Request settled, registry cleared for "${coalescingKey}"`);
+    });
+
+    return requestPromise;
   }
 }
 

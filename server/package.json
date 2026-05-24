@@ -5,7 +5,8 @@
     "dev": "tsx --watch server.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1022.0",
