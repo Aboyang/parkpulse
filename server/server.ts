@@ -8,8 +8,10 @@ import rateCarparkRouter from "./routes/rateCarparkRoute.js";
 import locationRouter from "./routes/locationRoute.js";
 import navigateRouter from "./routes/navigateRoute.js"
 import { portLogger } from "./middlewares/portMiddleware.js";
+import { createRateLimiter } from "./middlewares/rateLimitMiddleware.js";
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // Middleware to parse JSON
@@ -22,6 +24,16 @@ app.use(portLogger);
 app.use(cors({
   origin: process.env.CORS_ORIGIN?.split(',') ?? "http://localhost:5173"
 }));
+
+// Rate limiting — applied per route before routers
+app.use('/api/auth/login',   createRateLimiter({ label: 'auth_login',   limit: 5  }));
+app.use('/api/auth/signup',  createRateLimiter({ label: 'auth_signup',  limit: 3  }));
+app.use('/api/auth/confirm', createRateLimiter({ label: 'auth_confirm', limit: 5  }));
+app.use('/api/carparks',     createRateLimiter({ label: 'carparks',     limit: 15 }));
+app.use('/api/navigate',     createRateLimiter({ label: 'navigate',     limit: 30 }));
+app.use('/api/location',     createRateLimiter({ label: 'location',     limit: 20 }));
+app.use('/api/favorites',    createRateLimiter({ label: 'favorites',    limit: 20 }));
+app.use('/api/rating',       createRateLimiter({ label: 'rating',       limit: 10 }));
 
 // Mount routers
 app.use("/api/carparks", carparkRouter);
