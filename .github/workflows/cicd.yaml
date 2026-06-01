@@ -8,25 +8,35 @@ on:  # what triggers this pipeline to run
 
 jobs:
 
-  # test-frontend:  # job name, can be anything
-  #   runs-on: ubuntu-latest  # spins up a fresh Ubuntu machine in GitHub's cloud
+  test-frontend:
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - uses: actions/checkout@v3  # downloads your repo code onto that machine
+    steps:
+      - uses: actions/checkout@v3
 
-  #     - uses: actions/setup-node@v3  # installs Node.js on that machine
-  #       with:
-  #         node-version: '24'  # which Node version to use, match your local version
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '24'
 
-  #     - name: Install frontend dependencies
-  #       run: npm ci  # like npm install but stricter and faster, uses package-lock.json exactly
-  #       working-directory: ./frontend  # same as typing "cd frontend" before running the command
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: ./frontend
 
-  #     - name: Build frontend
-  #       run: npm run build  # compiles your React/frontend code into plain HTML/CSS/JS for deployment
-  #       working-directory: ./frontend  # again, run this inside the frontend folder
+      - name: Run lint check
+        run: npm run lint
+        working-directory: ./frontend
 
-  test-backend:  # separate job, runs in parallel with test-frontend
+      - name: Run type check
+        run: npm run typecheck
+        working-directory: ./frontend
+
+      - name: Build frontend  # catches import/bundle errors; dist not used here
+        run: npm run build
+        working-directory: ./frontend
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+
+  test-backend:  # runs in parallel with test-frontend
     runs-on: ubuntu-latest  # another fresh Ubuntu machine, independent from the frontend one
 
     steps:
@@ -49,7 +59,7 @@ jobs:
         working-directory: ./server  # run inside backend folder
 
   deploy:
-    needs: [test-backend]          # only runs if tests pass
+    needs: [test-frontend, test-backend]  # only runs if both pass
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'  # skip on PRs, deploy only on merge to main
 
@@ -82,5 +92,19 @@ jobs:
           tags: |
             ghcr.io/${{ env.OWNER }}/smart-parking-server:latest
             ghcr.io/${{ env.OWNER }}/smart-parking-server:${{ github.sha }}
-          cache-from: type=gha   # restore build cache from GitHub Actions cache
-          cache-to: type=gha,mode=max  # save build cache for next run
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ env.OWNER }}/smart-parking-frontend:latest
+            ghcr.io/${{ env.OWNER }}/smart-parking-frontend:${{ github.sha }}
+          build-args: |
+            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
