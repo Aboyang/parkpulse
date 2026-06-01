@@ -169,7 +169,8 @@ The backend will be available at `http://localhost:3000`. Update `VITE_API_BASE_
     │   ├── favoriteCarparkHelper.js
     │   └── navigateHelper.js
     ├── middlewares/
-    │   └── portMiddleware.js       # injects serving port into responses (load balancing debug)
+    │   ├── portMiddleware.js       # injects serving port into responses (load balancing debug)
+    │   └── rateLimitMiddleware.ts  # per-IP rate limiter (Redis-backed sliding window, factory: createRateLimiter)
     ├── models/
     │   ├── carpark.js              # entity: toDB / fromDB / toJSON, SVY21 distance
     │   ├── carparkAvailability.js
