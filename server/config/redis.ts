@@ -23,3 +23,10 @@ export async function setCache(key: string, value: unknown, ttl = 120): Promise<
         EX: ttl,
     });
 }
+
+// Atomically increment a counter and set its TTL on first use
+export async function incrementCounter(key: string, ttlSecs: number): Promise<number> {
+    const count = await client.incr(key);
+    if (count === 1) await client.expire(key, ttlSecs);
+    return count;
+}
