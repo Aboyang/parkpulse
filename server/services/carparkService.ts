@@ -6,11 +6,7 @@ import {
   sortByAvailability,
   filterByEV,
 } from "../helpers/carparkHelper.js";
-import path from "path";
-import dotenv from "dotenv";
 import type { EnrichedCarpark, CarparkAvailabilityApiEntry } from "../types/carpark.js";
-
-dotenv.config({ path: path.resolve("../.env") });
 
 export const DEFAULT_SEARCH_RADIUS_METRES = 500;
 

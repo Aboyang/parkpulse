@@ -20,6 +20,7 @@
     "proj4": "^2.20.4",
     "redis": "^5.11.0",
     "svy21": "^1.0.0",
+    "tsx": "^4.22.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
@@ -31,7 +32,6 @@
     "@typescript-eslint/parser": "^8.59.3",
     "eslint": "^10.3.0",
     "globals": "^17.6.0",
-    "tsx": "^4.22.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5"
   }

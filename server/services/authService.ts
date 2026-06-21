@@ -6,14 +6,10 @@ import {
   GlobalSignOutCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { randomUUID } from "crypto";
-import dotenv from "dotenv";
-import path from "path";
 import { User } from "../models/user.js";
 import { dynamoAdapter } from "../db/index.js";
 import { computeSecretHash, decodeIdToken } from "../helpers/authHelper.js";
 import type { DbAdapter } from "../types/db.js";
-
-dotenv.config({ path: path.resolve("../../.env") });
 
 export class AuthService {
   private region: string | undefined;
