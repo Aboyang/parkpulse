@@ -5,6 +5,7 @@
   "outputDirectory": "dist",
   "installCommand": "npm ci",
   "rewrites": [
+    { "source": "/api/:path*", "destination": "http://Parkpulse-server-env.eba-zb2r6p2b.ap-southeast-1.elasticbeanstalk.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
