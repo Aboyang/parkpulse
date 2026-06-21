@@ -71,6 +71,10 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: ./frontend
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
